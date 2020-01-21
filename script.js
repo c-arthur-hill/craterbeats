@@ -334,7 +334,7 @@ var beat = (function() {
     }
 
     getColor() {
-      return this._colorInstance.getColors()[this._allBeatsIndex][this.order];
+      return this._colorInstance.getColors()[this._allBeatsIndex][this._order];
     }
 
     getNotes() {
@@ -442,30 +442,26 @@ var plotAxes = (function() {
     var height = ctx.canvas.height;
     var startHeight = (height / 2) + ((axes / 2) * 11);
     var xMin = 0;
+	
+	ctx.save();
     
-    ctx.closePath();
+    ctx.beginPath();
     ctx.lineWidth = 1;
     ctx.strokeStyle = '#dee2e6';
     ctx.fillStyle = '#dee2e6';
-    ctx.beginPath();
     for(var i = 0; i < axes; ++i) { 
       ctx.moveTo(xMin, startHeight - (i * 11));
       ctx.lineTo(width, startHeight - (i * 11));
     } 
-
-    ctx.closePath();
     ctx.stroke();
-    ctx.save();
     ctx.beginPath();
-    ctx.fillStyle = '#dee2e6';
     if (axes > 1) {
       ctx.fillRect((width/2)-1, (startHeight - ((axes-1) * 11)), 2, (axes * 11));
     } else {
       ctx.fillRect((width/2)-1, 0, 2, height);
     }
-    ctx.closePath();
     ctx.stroke();
-    ctx.save();
+    ctx.restore()
   }
 
   return {
@@ -694,24 +690,24 @@ var plotMovingRectangleSingleton = (function() {
       _context.beginPath();
       _context.lineWidth = 3;
       for (var i = 0; i < allBeats[index].length; ++i) {
-	/**
-	if (Math.abs(_animationPlace + allBeats[index][i].getOffsetPixels() - halfWidth) <= stepSize) {
-	  bounce = 11;
-	}
-	**/
-	var position = _animationPlace + allBeats[index][i].getOffsetPixels();
-	if ((position >= 0 && position < halfWidth) || (position <= _screenStatusInstance.getPixelWidth() && position >= (_screenStatusInstance.getPixelWidth() - halfWidth))) {
-	  _context.strokeStyle = allBeats[index][i].getColor();
-	  for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
-	    _context.strokeRect(position, (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
-	  }
-	  _context.stroke();
-	}
-	/**
-	if (bounce) {
-	  bounce = 0;
-	}
-	**/
+		var position = _animationPlace + allBeats[index][i].getOffsetPixels();
+
+		if (Math.abs(position - halfWidth) <= _screenStatusInstance.getStepSize()) {
+		  bounce = 11;
+		}
+
+		if ((position >= 0 && position < halfWidth) || (position <= _screenStatusInstance.getPixelWidth() && position >= (_screenStatusInstance.getPixelWidth() - halfWidth))) {
+		  _context.strokeStyle = allBeats[index][i].getColor();
+		  for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
+			_context.strokeRect(position, (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
+		  }
+
+		}
+
+		if (bounce) {
+		  bounce = 0;
+		}
+
       }
 
       _animationPlace = _animationPlace - _screenStatusInstance.getStepSize();
