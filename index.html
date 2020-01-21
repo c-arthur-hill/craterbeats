@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+	  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CraterBeats App</title>
+    <link href="https://fonts.googleapis.com/css?family=Permanent+Marker&display=swap" rel="stylesheet">
+	  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body onload="buttonFunctions.init()">
+    <div class="container">
+      <div class="row">
+        <div class="col-12">
+          <h1 class="text-center text-secondary marker">CraterBeats</h1>
+        </div>
+      </div>
+    </div>
+    <br>
+	  <canvas class="middle overflow-hidden" id="canvas" height="400"></canvas>
+    <br>
+    <div class="container">
+      <ul class="nav nav-tabs">
+        <li class="nav-item">
+          <a class="nav-link active" data-toggle="tab" onclick="buttonFunctions.bar()" href="#instruments-tab">Timbre</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-toggle="tab" onclick="buttonFunctions.beat()" href="#pieces-tab">Beats + Riffs</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-toggle="tab" onclick="buttonFunctions.sin()" href="#compositions-tab">Tracks</a>
+        </li>
+      </ul>
+      <div class="tab-content" role="tabpanel" aria-labelledby="beat-tab">
+        <div id="instruments-tab" class="active tab-pane border-right border-left border-bottom p-3">
+          <form class="form">
+<!---
+            <div id="InstrumentButtonColumn" class="form-row">
+              <div class="col-4 col-md-2">
+                <button type="button" data-toggle="button" id="newInstrument" class="btn btn-dark btn-outline-light btn-block" onclick="buttonFunctions.instrument()">New Instrument</button>
+              </div>
+            </div>
+--->
+            <div class="form-row">
+              <div class="col-6 col-md-2 mt-2">
+                <button type="button" onclick="buttonFunctions.leftTone()"  class="btn btn-dark btn-outline-light lower btn-block">&larr;</button>
+              </div>
+              <div class="col-6 col-md-2 mt-2">
+                <button type="button" onclick="buttonFunctions.rightTone()"  class="btn btn-dark btn-outline-light higher btn-block">&rarr;</button>
+              </div>
+              <div class="col-12 mt-2 col-md-4">
+                <div class="input-group d-flex">
+                  <button type="button" onclick="buttonFunctions.decreaseTone()" class="btn btn-dark btn-outline-light minus form-control">-</button>
+                  <input class="form-control text-light bg-dark border-white tone" type="number" min="0" max="9" value="5" aria-label="periods in beat">
+                  <button type="button" onclick="buttonFunctions.increaseTone()" class="btn btn-dark btn-outline-light plus form-control">+</button>
+                </div>
+              </div>
+              <div class="col-6 col-md-2 mt-2">
+                <button type="button" onclick="buttonFunctions.upOctave()" class="btn btn-dark btn-outline-light btn-block up">&darr;</button>
+              </div>
+              <div class="col-6 col-md-2 mt-2">
+                <button type="button" onclick="buttonFunctions.downOctave()" class="btn btn-dark btn-outline-light btn-block down">&uarr;</button>
+              </div>
+            </div>
+<!--
+            <div class="form-row mt-3 mt-md-2">
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">C</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">C#</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">D</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">D#</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">E</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">F</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">F#</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">G</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">G#</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block 0">A</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block 0">A#</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block 0">B</button>
+              </div>
+            </div>
+            <div class="form-row mt-3 mt-md-2">
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">1</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">2</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">3</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">4</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">5</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">6</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">7</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">8</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">9</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block 0">10</button>
+              </div>
+              <div class="col-4 col-md-2">
+                <div class="input-group d-flex">
+                  <input class="form-control text-light bg-dark border-white" type="number" min="0" max="9" value="5" aria-label="copy octave">
+                  <button type="button" onclick="buttonFunctions.copy()" class="btn btn-dark btn-outline-light form-control opy">Copy</button>
+                </div>
+              </div>
+            </div>
+-->
+          </form> 
+        </div>
+        <div id="pieces-tab" class="tab-pane border-right border-left border-bottom p-3">
+          <form class="form">
+<!---
+            <div id="beatButtonColumn" class="form-row">
+              <div class="col-4 col-md-2">
+                <button type="button" data-toggle="button" id="beat" class="btn btn-dark btn-block btn-outline-light" onclick="buttonFunctions.newBeat()">New Beat</button>
+              </div>
+            </div>
+--->
+            <div id="pulseButtonColumn" class="form-row mt-2">
+              <div class="col-4 col-md-2">
+                <button type="button" id="pulse" class="btn btn-dark btn-outline-light btn-block" data-beat-index="0" onclick="buttonFunctions.pulse()">Add Pulse</button>
+              </div>
+            </div>
+            <div class="form-row mt-3 mt-md-2">
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" data-note="0" onclick="buttonFunctions.addNote(this)" class="btn btn-dark btn-outline-light btn-block">C</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" data-note="1" onclick="buttonFunctions.addNote(this)" class="btn btn-dark btn-outline-light btn-block">C#</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" data-note="2" onclick="buttonFunctions.addNote(this)" class="btn btn-dark btn-outline-light btn-block">D</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" data-note="3" onclick="buttonFunctions.addNote(this)" class="btn btn-dark btn-outline-light btn-block">D#</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" data-note="4" onclick="buttonFunctions.addNote(this)" class="btn btn-dark btn-outline-light btn-block">E</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" data-note="5" onclick="buttonFunctions.addNote(this)" class="btn btn-dark btn-outline-light btn-block">F</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" data-note="6" onclick="buttonFunctions.addNote(this)" class="btn btn-dark btn-outline-light btn-block">F#</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" data-note="7" onclick="buttonFunctions.addNote(this)" class="btn btn-dark btn-outline-light btn-block">G</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" data-note="8" onclick="buttonFunctions.addNote(this)" class="btn btn-dark btn-outline-light btn-block">G#</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" data-note="9" onclick="buttonFunctions.addNote(this)" class="btn btn-dark btn-outline-light btn-block 0">A</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" data-note="10" onclick="buttonFunctions.addNote(this)" class="btn btn-dark btn-outline-light btn-block 0">A#</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" data-note="11" onclick="buttonFunctions.addNote(this)" class="btn btn-dark btn-outline-light btn-block 0">B</button>
+              </div>
+            </div>
+            <div class="form-row mt-3 mt-md-2">
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">1</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">2</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">3</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">4</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">5</button>
+              </div>
+              <div class="col-2 col-md-1 mb-2 mb-md-0">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">6</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">7</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">8</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block">9</button>
+              </div>
+              <div class="col-2 col-md-1">
+                <button type="button" class="btn btn-dark btn-outline-light btn-block 0">10</button>
+              </div>
+              <div class="col-4 col-md-2">
+                <div class="input-group d-flex">
+                  <input class="form-control text-light bg-dark border-white" type="number" min="0" max="9" value="5" aria-label="copy octave">
+                  <button type="button" onclick="buttonFunctions.copy()" class="btn btn-dark btn-outline-light form-control opy">Copy</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div id="compositions-tab" class="container tab-pane fade border-right border-left border-bottom p-3">
+          <h3>ToDo</h3>
+        </div>
+      </div>
+      <div class="row mt-5 mt-md-4 ml-0 mr-0">
+        <div class="col-12 text-light border border-light scroller">
+          <div class="col-12 col-md-8 mx-auto">
+	    <br>
+            <h1>You Can Create Music</h1>
+            <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.</p>	
+            <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.</p>	
+            <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.</p>	
+	    </div>
+        </div>
+      </div> 
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script src="w3color.js"></script>
+    <script type="text/javascript" src="script.js"></script> 
+    <script type="text/javascript" src="tone.js"></script>
+  </body>
+</html>

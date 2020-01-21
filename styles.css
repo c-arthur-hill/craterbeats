@@ -1,0 +1,25 @@
+/* bootstrap overrides */
+.btn, .btn:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* custom styles */
+body, input[type="text"], input[type="number"], input[type="text"]:focus, input[type="number"]:focus {
+  background-color: #111;
+}
+
+.marker {
+  font-family: "Permanent Marker", cursive;
+}
+
+.scroller {
+  height: 300px;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+}
+
+.middle {
+  display: block;
+  margin: 0 auto;
+}
