@@ -212,7 +212,7 @@ var allBeatsSingleton = (function() {
     // index of pulses
     var _pulseIndex = -1
 
-    function addBeat(timeOffset, index, repeat=1) {
+    function addBeat(index, repeat=1) {
       if(!(index in _allBeats)) {
 	_allBeats[index] = [];
       }
@@ -251,8 +251,8 @@ var allBeatsSingleton = (function() {
       return _index;
     }
     
-    function getIndexFirst(index) {
-      return _allBeats[_index][0].first;
+    function getIndexStart(index) {
+      return _allStarts[index];
     }
 
     function getPulseIndex() {
@@ -281,7 +281,7 @@ var allBeatsSingleton = (function() {
       getAllStarts: getAllStarts,
       getCurrentPulseLength: getCurrentPulseLength,
       getIndex: getIndex,
-      getIndexFirst: getIndexFirst,
+      getIndexStart: getIndexStart,
       getPulseIndex: getPulseIndex,
       setIndex: setIndex,
       setPulseIndex: setPulseIndex
@@ -782,7 +782,7 @@ var buttonFunctions = (function() {
     buttonContainer.className = 'col-1 pulse-btn-container';
     var pulseButton = document.createElement('button');
     pulseButton.type = 'button';
-    pulseButton.dataset.index = (_allBeatsIndex.getIndex()).toString();
+    pulseButton.dataset.index = (_allBeats.getIndex()).toString();
     pulseButton.dataset.pulseIndex = (value).toString();
     pulseButton.style.color = _colors.getIndexColor(_allBeats.getIndex(), value);
     pulseButton.className = 'pulse-btn btn btn-outline-light btn-dark btn-block';
@@ -876,8 +876,8 @@ var buttonFunctions = (function() {
     const now = performance.now();
     const pulseButton = document.getElementById('pulse');
     const beatIndex = parseInt(pulseButton.dataset.beatIndex);
-    if ((allBeats.length-1) >= beatIndex) {
-      _allBeats.addBeat(canvas.getIndexFirst(beatIndex), performance.now(), beatIndex);
+    if ((_allBeats.getCurrentPulseLength()-1) >= beatIndex) {
+      _allBeats.addBeat(beatIndex);
       addPulseButton(_allBeats.getCurrentPulseLength()-1);
     } else {
       alert("You did something weird");
