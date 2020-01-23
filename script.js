@@ -151,14 +151,9 @@ var screenStatusSingleton = (function() {
   var _instance = null;
 
   function createInstance() {
-    var _pixelWidth = 2400;
     var _fps = 60;
     var _stepSize = 3;
 
-    function getPixelWidth() {
-      return _pixelWidth;
-    }
-    
     function getFramesPerSecond() {
       return _fps;
     }
@@ -167,10 +162,6 @@ var screenStatusSingleton = (function() {
       return _stepSize;
     }
   
-    function setPixelWidth(x) {
-      _pixelWidth = x;
-    }
-
     function setFramesPerSecond(x) {
       _fps = x;
     }
@@ -180,10 +171,8 @@ var screenStatusSingleton = (function() {
     }
 
     return {
-      getPixelWidth: getPixelWidth,
       getFramesPerSecond: getFramesPerSecond,
       getStepSize: getStepSize,
-      setPixelWidth: setPixelWidth,
       setFramesPerSecond: setFramesPerSecond,	
       setStepSize: setStepSize
     }
@@ -207,17 +196,24 @@ var allBeatsSingleton = (function() {
   function createInstance() {
     var _allBeats = [];
     var _allStarts = [];
+		var _allPixelWidths = [];
     // index of allBeats
     var _index = -1;
     // index of pulses
-    var _pulseIndex = -1
+    var _pulseIndex = -1;
 
-    function addBeat(index, repeat=1) {
+		function calcOffset(index) {
+			var screenStatusInstance = screenStatusSingleton.getInstance();
+			var diff = performance.now() - _allStarts[index];
+			var leaderPeriod = Math.floor(getPixelWidth() * 1000 / (screenStatusInstance.getFramesPerSecond() * screenStatusInstance.getStepSize()));
+			return diff % leaderPeriod;
+		}
+
+		function addBeat(index, repeat=1) {
       if(!(index in _allBeats)) {
-	_allBeats[index] = [];
+				_allBeats[index] = [];
       }
-      beat = beat.createBeat((performance.now() - _allStarts[index]), index, _allBeats[index].length, repeat);
-      _allBeats[index].push(beat);
+      _allBeats[index].push(beat.createBeat(calcOffset(index), index, _allBeats[index].length, repeat));
       _index = index;
       _pulseIndex = _allBeats[index].length - 1;
     };
@@ -225,6 +221,7 @@ var allBeatsSingleton = (function() {
     function addEmptyBeat() {
       _allBeats.push([]);
       _allStarts.push(performance.now());
+			_allPixelWidths.push(1200);
       _index = _index + 1;
       newBeat = beat.createBeat(0, _index, 0);
       _allBeats[_index].push(newBeat);
@@ -241,9 +238,9 @@ var allBeatsSingleton = (function() {
 
     function getCurrentPulseLength() {
       if(_index >= 0) {
-	return _allBeats[_index].length;
+				return _allBeats[_index].length;
       } else {
-	return 0;
+				return 0;
       }
     }
 
@@ -255,6 +252,10 @@ var allBeatsSingleton = (function() {
       return _allStarts[index];
     }
 
+    function getPixelWidth() {
+      return _allPixelWidths[_index];
+    }
+    
     function getPulseIndex() {
       return _pulseIndex;
     }
@@ -265,6 +266,10 @@ var allBeatsSingleton = (function() {
 	_allBeats[_index] = [];
       }
     }
+
+		function setPixelWidth(x) {
+			_pixelWidth = x;
+		}
 
     function setPulseIndex(i) {
       if(i < getCurrentPulseLength()) {
@@ -282,9 +287,11 @@ var allBeatsSingleton = (function() {
       getCurrentPulseLength: getCurrentPulseLength,
       getIndex: getIndex,
       getIndexStart: getIndexStart,
+			getPixelWidth: getPixelWidth,
       getPulseIndex: getPulseIndex,
       setIndex: setIndex,
-      setPulseIndex: setPulseIndex
+      setPulseIndex: setPulseIndex,
+			setPixelWidth: setPixelWidth
     }
   }
 
@@ -349,10 +356,11 @@ var beat = (function() {
     }
 
     getOffsetPixels() {
-      var screenStat = screenStatusSingleton.getInstance();
-      if(!this._offsetPixels || (screenStat.getPixelWidth() !== this._lastPixelWidth)) {
-	this._lastPixelWidth = screenStat.getPixelWidth();
-	this._offsetPixels = this._offset * screenStat.getFramesPerSecond() * screenStat.getStepSize() / 1000;
+      var allBeatsInstance = allBeatsSingleton.getInstance();
+			var screenStatusInstance = screenStatusSingleton.getInstance();
+      if(!this._offsetPixels || (allBeatsInstance.getPixelWidth() !== this._lastPixelWidth)) {
+				this._lastPixelWidth = allBeatsInstance.getPixelWidth();
+				this._offsetPixels = this._offset * screenStatusInstance.getFramesPerSecond() * screenStatusInstance.getStepSize() / 1000;
       }
       return this._offsetPixels;
     }
@@ -689,38 +697,38 @@ var plotMovingRectangleSingleton = (function() {
       _context.beginPath();
       _context.lineWidth = 3;
       for (var i = 0; i < allBeats[index].length; ++i) {
-	var position = _animationPlace + allBeats[index][i].getOffsetPixels();
-	_context.strokeStyle = allBeats[index][i].getColor();
+				var position = _animationPlace - allBeats[index][i].getOffsetPixels();
+				_context.strokeStyle = allBeats[index][i].getColor();
 
-	if (Math.abs(position) <= _screenStatusInstance.getStepSize()) {
-	  bounce = 11;
-	}
+				if (Math.abs(position) <= _screenStatusInstance.getStepSize()) {
+					bounce = 11;
+				}
 
-	// left side
-	if (position >= 0 && position < halfWidth) {
-	  var leftPosition = halfWidth - position;
-	  for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
-	    _context.strokeRect(leftPosition, (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
-	  }
-	}
+				// left side
+				if (position >= 0 && position < halfWidth) {
+					var leftPosition = halfWidth - position;
+					for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
+						_context.strokeRect(leftPosition, (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
+					}
+				}
 
-	// right side
-	if (position <= _screenStatusInstance.getPixelWidth() && position > (_screenStatusInstance.getPixelWidth() - halfWidth)) {
-	  var rightPosition = halfWidth + (_screenStatusInstance.getPixelWidth() - position) + 1;
-	  for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
-	    _context.strokeRect(rightPosition, (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
-	  }
-	
-	}
+				// right side
+				if (position <= _allBeatsInstance.getPixelWidth() && position > (_allBeatsInstance.getPixelWidth() - halfWidth)) {
+					var rightPosition = halfWidth + (_allBeatsInstance.getPixelWidth() - position) + 1;
+					for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
+						_context.strokeRect(rightPosition, (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
+					}
+				
+				}
 
-	if (bounce) {
-	  bounce = 0;
-	}
+				if (bounce) {
+					bounce = 0;
+				}
 
       }
 
       _animationPlace = _animationPlace + _screenStatusInstance.getStepSize();
-      if (_animationPlace >= _screenStatusInstance.getPixelWidth()) {
+      if (_animationPlace >= _allBeatsInstance.getPixelWidth()) {
 	_animationPlace = 0;
       }
 
@@ -878,6 +886,7 @@ var buttonFunctions = (function() {
     const beatIndex = parseInt(pulseButton.dataset.beatIndex);
     if ((_allBeats.getCurrentPulseLength()-1) >= beatIndex) {
       _allBeats.addBeat(beatIndex);
+	  console.log(_allBeats.getAllBeats());
       addPulseButton(_allBeats.getCurrentPulseLength()-1);
     } else {
       alert("You did something weird");
