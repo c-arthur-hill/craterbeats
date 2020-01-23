@@ -151,7 +151,7 @@ var screenStatusSingleton = (function() {
   var _instance = null;
 
   function createInstance() {
-    var _pixelWidth = 1200;
+    var _pixelWidth = 2400;
     var _fps = 60;
     var _stepSize = 3;
 
@@ -401,7 +401,7 @@ var colorSingleton = (function() {
     function setColors() {
       for(var leftColor = 0; leftColor < _colorVector.length; ++leftColor) {
 	for(var hue = 0; hue < _hueMatrix.length; ++hue) {
-	  var subBeatColors = [];
+	  var subBeatColors = ['#bf0000'];
 	  var ncsColorString = '-' + _colorVector[leftColor] + _hueMatrix[hue];
 	  var completeString;
 	  for(var blackness = 0; blackness < _blacknessVector.length; ++blackness) {
@@ -557,7 +557,6 @@ var plotBarSingleton = (function() {
     function setCanvasWidth(newWidth) {
       _canvas.setAttribute('width', Math.floor(window.innerWidth));
       setAnimationPlace(_animationPlace);
-      setAnimationPlace(_animationPlace);
     }
   
     return {
@@ -690,29 +689,39 @@ var plotMovingRectangleSingleton = (function() {
       _context.beginPath();
       _context.lineWidth = 3;
       for (var i = 0; i < allBeats[index].length; ++i) {
-		var position = _animationPlace + allBeats[index][i].getOffsetPixels();
+	var position = _animationPlace + allBeats[index][i].getOffsetPixels();
+	_context.strokeStyle = allBeats[index][i].getColor();
 
-		if (Math.abs(position - halfWidth) <= _screenStatusInstance.getStepSize()) {
-		  bounce = 11;
-		}
+	if (Math.abs(position) <= _screenStatusInstance.getStepSize()) {
+	  bounce = 11;
+	}
 
-		if ((position >= 0 && position < halfWidth) || (position <= _screenStatusInstance.getPixelWidth() && position >= (_screenStatusInstance.getPixelWidth() - halfWidth))) {
-		  _context.strokeStyle = allBeats[index][i].getColor();
-		  for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
-			_context.strokeRect(position, (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
-		  }
+	// left side
+	if (position >= 0 && position < halfWidth) {
+	  var leftPosition = halfWidth - position;
+	  for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
+	    _context.strokeRect(leftPosition, (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
+	  }
+	}
 
-		}
+	// right side
+	if (position <= _screenStatusInstance.getPixelWidth() && position > (_screenStatusInstance.getPixelWidth() - halfWidth)) {
+	  var rightPosition = halfWidth + (_screenStatusInstance.getPixelWidth() - position) + 1;
+	  for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
+	    _context.strokeRect(rightPosition, (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
+	  }
+	
+	}
 
-		if (bounce) {
-		  bounce = 0;
-		}
+	if (bounce) {
+	  bounce = 0;
+	}
 
       }
 
-      _animationPlace = _animationPlace - _screenStatusInstance.getStepSize();
-      if (_animationPlace <= 0) {
-	_animationPlace = _screenStatusInstance.getPixelWidth();
+      _animationPlace = _animationPlace + _screenStatusInstance.getStepSize();
+      if (_animationPlace >= _screenStatusInstance.getPixelWidth()) {
+	_animationPlace = 0;
       }
 
       requestAnimationFrame(plotMovingRectangle);
@@ -722,33 +731,16 @@ var plotMovingRectangleSingleton = (function() {
       _animationPlace = newVal;
     }
 
-    function setCanvasWidth() {
-      var newWidth = Math.floor(window.innerWidth);
-      if (newWidth < (_screenStatusInstance.getPixelWidth() / 2)) {
-	 newWidth = Math.floor(_screenStatusInstance.getPixelWidth() / 4);
-      } else if (newWidth >= (_screenStatusInstance.getPixelWidth() / 2) && newWidth < (_screenStatusInstance.getPixelWidth() * 3 / 4)) {
-	newWidth = Math.floor(_screenStatusInstance.getPixelWidth() / 2);
-      } else if (newWidth >= (_screenStatusInstance.getPixelWidth() * 3 / 4) && newWidth <= _screenStatusInstance.getPixelWidth()) {
-	newWidth = Math.floor(_screenStatusInstance.getPixelWidth() * 3 / 4);
-      } else {
-	newWidth = _screenStatusInstance.getPixelWidth();
-      }
-      
-      _canvas.setAttribute('width', newWidth);
-    }
-
     return {
       getCanvasWidth: getCanvasWidth,
       plotMovingRectangle: plotMovingRectangle,
       setAnimationPlace: setAnimationPlace,
-      setCanvasWidth: setCanvasWidth
     }
   }
 
   function getInstance() {
     if(!_instance) {
       _instance = createInstance();
-      _instance.setCanvasWidth();
       _instance.setAnimationPlace((_instance.getCanvasWidth() / 2));
     }
     return _instance;
@@ -838,7 +830,6 @@ var buttonFunctions = (function() {
   }
 
   function beat() {
-    _plotMovingRectangle.setCanvasWidth();
     _plotMovingRectangle.plotMovingRectangle();
   }
 
