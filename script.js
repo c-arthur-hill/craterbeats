@@ -202,20 +202,23 @@ var allBeatsSingleton = (function() {
     // index of pulses
     var _pulseIndex = -1;
 
-		function calcOffset(index) {
-			var screenStatusInstance = screenStatusSingleton.getInstance();
-			var diff = performance.now() - _allStarts[index];
-			var leaderPeriod = Math.floor(getPixelWidth() * 1000 / (screenStatusInstance.getFramesPerSecond() * screenStatusInstance.getStepSize()));
-			return diff % leaderPeriod;
+		function calcOffset() {
+			return Math.floor(performance.now() - _allStarts[_index]) % pixelsToMicroSeconds(getPixelWidth());
 		}
 
-		function addBeat(index, repeat=1) {
-      if(!(index in _allBeats)) {
-				_allBeats[index] = [];
-      }
-      _allBeats[index].push(beat.createBeat(calcOffset(index), index, _allBeats[index].length, repeat));
-      _index = index;
-      _pulseIndex = _allBeats[index].length - 1;
+    function pixelsToMicroSeconds(px) {
+			var screenStatusInstance = screenStatusSingleton.getInstance();
+      return Math.floor(px * 1000 / (screenStatusInstance.getFramesPerSecond() * screenStatusInstance.getStepSize()));
+    }
+
+    function microSecondsToPixels(ms) {
+			var screenStatusInstance = screenStatusSingleton.getInstance();
+      return Math.floor(ms * screenStatusInstance.getFramesPerSecond() * screenStatusInstance.getStepSize() / 1000);
+    }
+
+		function addBeat(repeat=1) {
+      _allBeats[_index].push(beat.createBeat(calcOffset(), _index, _allBeats[_index].length, repeat));
+      _pulseIndex = _allBeats[_index].length - 1;
     };
 
     function addEmptyBeat() {
@@ -248,8 +251,8 @@ var allBeatsSingleton = (function() {
       return _index;
     }
     
-    function getIndexStart(index) {
-      return _allStarts[index];
+    function getIndexStart() {
+      return _allStarts[_index];
     }
 
     function getPixelWidth() {
@@ -263,7 +266,7 @@ var allBeatsSingleton = (function() {
     function setIndex(i) {
       _index = i;
       if(!(_index in _allBeats)) {
-	_allBeats[_index] = [];
+        _allBeats[_index] = [];
       }
     }
 
@@ -282,6 +285,7 @@ var allBeatsSingleton = (function() {
     return {
       addBeat: addBeat,
       addEmptyBeat: addEmptyBeat,
+      calcOffset: calcOffset,
       getAllBeats: getAllBeats,
       getAllStarts: getAllStarts,
       getCurrentPulseLength: getCurrentPulseLength,
@@ -291,7 +295,9 @@ var allBeatsSingleton = (function() {
       getPulseIndex: getPulseIndex,
       setIndex: setIndex,
       setPulseIndex: setPulseIndex,
-			setPixelWidth: setPixelWidth
+			setPixelWidth: setPixelWidth,
+      microSecondsToPixels: microSecondsToPixels,
+      pixelsToMicroSeconds: pixelsToMicroSeconds
     }
   }
 
@@ -360,7 +366,7 @@ var beat = (function() {
 			var screenStatusInstance = screenStatusSingleton.getInstance();
       if(!this._offsetPixels || (allBeatsInstance.getPixelWidth() !== this._lastPixelWidth)) {
 				this._lastPixelWidth = allBeatsInstance.getPixelWidth();
-				this._offsetPixels = this._offset * screenStatusInstance.getFramesPerSecond() * screenStatusInstance.getStepSize() / 1000;
+				this._offsetPixels = allBeatsInstance.microSecondsToPixels(this._offset);
       }
       return this._offsetPixels;
     }
@@ -409,16 +415,16 @@ var colorSingleton = (function() {
     function setColors() {
       for(var leftColor = 0; leftColor < _colorVector.length; ++leftColor) {
 	for(var hue = 0; hue < _hueMatrix.length; ++hue) {
-	  var subBeatColors = ['#bf0000'];
-	  var ncsColorString = '-' + _colorVector[leftColor] + _hueMatrix[hue];
-	  var completeString;
-	  for(var blackness = 0; blackness < _blacknessVector.length; ++blackness) {
-	    for(var chrom = 0; chrom < _chromaticVector.length; ++chrom) {
-	      completeString = _blacknessVector[blackness] + _chromaticVector[chrom] + ncsColorString;
-	      subBeatColors.push(w3color('ncs(' + completeString + ')').toHexString());
-	    }
-	  }
-	  _colors.push(subBeatColors);
+		var subBeatColors = ['#bf0000'];
+		var ncsColorString = '-' + _colorVector[leftColor] + _hueMatrix[hue];
+		var completeString;
+		for(var blackness = 0; blackness < _blacknessVector.length; ++blackness) {
+			for(var chrom = 0; chrom < _chromaticVector.length; ++chrom) {
+				completeString = _blacknessVector[blackness] + _chromaticVector[chrom] + ncsColorString;
+				subBeatColors.push(w3color('ncs(' + completeString + ')').toHexString());
+			}
+		}
+		_colors.push(subBeatColors);
 	}    
       }
     }
@@ -496,7 +502,7 @@ var plotBarSingleton = (function() {
 
       _animationPlace = _animationPlace - _screenStatusInstance.getStepSize();
       if (_animationPlace <= 0) {
-	_animationPlace = _context.canvas.width;
+				_animationPlace = _context.canvas.width;
       }
 
       var width = _context.canvas.width;
@@ -513,42 +519,42 @@ var plotBarSingleton = (function() {
       _context.lineWidth = barWidth-2;
 
       if(currentInstrument) {
-	for(var oct = 0; oct < currentInstrument.length; ++oct) {
-	  x = initialX;
-	  if(currentIndex.octave == oct) {
-	    y += 200;
-	    currentLoop = true;
-	  } else {
-	    y += 20;
-	  }
-	  _context.moveTo(x, y);
-	  for(var note = 0; note < currentInstrument[oct].length; ++note) {
-	    for(var subNote = 0; subNote < currentInstrument[oct][note].length; ++subNote) {
-	      if(currentLoop) {
+		for(var oct = 0; oct < currentInstrument.length; ++oct) {
+		x = initialX;
+		if(currentIndex.octave == oct) {
+			y += 200;
+			currentLoop = true;
+		} else {
+			y += 20;
+		}
+		_context.moveTo(x, y);
+		for(var note = 0; note < currentInstrument[oct].length; ++note) {
+			for(var subNote = 0; subNote < currentInstrument[oct][note].length; ++subNote) {
+				if(currentLoop) {
 		if(currentIndex.note == note && currentIndex.subNote == subNote) {
-		  _context.closePath();
-		  _context.stroke();
-		  _context.beginPath();
-		  _context.moveTo(x, y);
-		  _context.strokeStyle = '#bf0000';
+			_context.closePath();
+			_context.stroke();
+			_context.beginPath();
+			_context.moveTo(x, y);
+			_context.strokeStyle = '#bf0000';
 		}
 		_context.lineTo(x, y-(5+(20 * currentInstrument[oct][note][subNote])));
 		if(currentIndex.note == note && currentIndex.subNote == subNote) {
-		  _context.closePath();
-		  _context.stroke();
-		  _context.beginPath();
-		  _context.strokeStyle = '#fff';
+			_context.closePath();
+			_context.stroke();
+			_context.beginPath();
+			_context.strokeStyle = '#fff';
 		}
-	      } else {
+				} else {
 		_context.lineTo(x, y-(2 * currentInstrument[oct][note][subNote]));
-	      }
-	      x += barWidth;
-	      _context.moveTo(x, y);
-	    }
-	  }
-	  if(currentLoop) {
-	    currentLoop = false;
-	  }
+				}
+				x += barWidth;
+				_context.moveTo(x, y);
+			}
+		}
+		if(currentLoop) {
+			currentLoop = false;
+		}
 	}
       } else {
 	alert("No Instrument");
@@ -699,28 +705,24 @@ var plotMovingRectangleSingleton = (function() {
       for (var i = 0; i < allBeats[index].length; ++i) {
 				var position = _animationPlace - allBeats[index][i].getOffsetPixels();
 				_context.strokeStyle = allBeats[index][i].getColor();
-
+        
 				if (Math.abs(position) <= _screenStatusInstance.getStepSize()) {
 					bounce = 11;
 				}
 
-				// left side
-				if (position >= 0 && position < halfWidth) {
-					var leftPosition = halfWidth - position;
-					for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
-						_context.strokeRect(leftPosition, (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
-					}
+        // default to left side
+				position = halfWidth - position;
+				if (position < 0) {
+					// try placing on right side
+					position = position +  _allBeatsInstance.getPixelWidth() + 1;
 				}
 
-				// right side
-				if (position <= _allBeatsInstance.getPixelWidth() && position > (_allBeatsInstance.getPixelWidth() - halfWidth)) {
-					var rightPosition = halfWidth + (_allBeatsInstance.getPixelWidth() - position) + 1;
+				if (position >= 0 && position <= width) {
 					for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
-						_context.strokeRect(rightPosition, (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
+						_context.strokeRect(position, (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
 					}
-				
 				}
-
+	
 				if (bounce) {
 					bounce = 0;
 				}
@@ -729,27 +731,36 @@ var plotMovingRectangleSingleton = (function() {
 
       _animationPlace = _animationPlace + _screenStatusInstance.getStepSize();
       if (_animationPlace >= _allBeatsInstance.getPixelWidth()) {
-	_animationPlace = 0;
+				_animationPlace = 0;
       }
 
       requestAnimationFrame(plotMovingRectangle);
     }
 
-    function setAnimationPlace(newVal) {
-      _animationPlace = newVal;
+    function setAnimationPlace() {
+      _animationPlace = _allBeatsInstance.microSecondsToPixels(_allBeatsInstance.calcOffset());
     }
+
+    function setCanvasWidth() {
+      var toWidth = window.innerWidth;
+      if (toWidth > _allBeatsInstance.getPixelWidth()) {
+        toWidth = _allBeatsInstance.getPixelWidth();
+      }
+      _canvas.setAttribute('width', Math.floor(toWidth));
+    }
+
 
     return {
       getCanvasWidth: getCanvasWidth,
       plotMovingRectangle: plotMovingRectangle,
       setAnimationPlace: setAnimationPlace,
+      setCanvasWidth: setCanvasWidth
     }
   }
 
   function getInstance() {
     if(!_instance) {
       _instance = createInstance();
-      _instance.setAnimationPlace((_instance.getCanvasWidth() / 2));
     }
     return _instance;
   }
@@ -838,6 +849,8 @@ var buttonFunctions = (function() {
   }
 
   function beat() {
+    _plotMovingRectangle.setCanvasWidth();
+    _plotMovingRectangle.setAnimationPlace();
     _plotMovingRectangle.plotMovingRectangle();
   }
 
@@ -885,8 +898,7 @@ var buttonFunctions = (function() {
     const pulseButton = document.getElementById('pulse');
     const beatIndex = parseInt(pulseButton.dataset.beatIndex);
     if ((_allBeats.getCurrentPulseLength()-1) >= beatIndex) {
-      _allBeats.addBeat(beatIndex);
-	  console.log(_allBeats.getAllBeats());
+      _allBeats.addBeat();
       addPulseButton(_allBeats.getCurrentPulseLength()-1);
     } else {
       alert("You did something weird");
