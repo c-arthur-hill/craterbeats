@@ -682,6 +682,7 @@ var plotMovingRectangleSingleton = (function() {
     var _screenStatusInstance = screenStatusSingleton.getInstance();
     var _allBeatsInstance = allBeatsSingleton.getInstance();
     var _animationPlace = null;
+    var _lastDrop = null;
     var _canvas = document.getElementById("canvas"); 
     var _context = canvas.getContext("2d");
     
@@ -721,8 +722,13 @@ var plotMovingRectangleSingleton = (function() {
 					for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
 						_context.strokeRect(position, (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
 					}
-				}
-	
+				} else if ((position - _lastDrop) >= 0 && (position - _lastDrop) <= width) {
+          // annoying bug... when _animationPlace overflows to zero below a bunch of items would drop off
+					for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
+            _context.strokeRect((position - _lastDrop), (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
+          }
+        }
+
 				if (bounce) {
 					bounce = 0;
 				}
@@ -731,7 +737,9 @@ var plotMovingRectangleSingleton = (function() {
 
       _animationPlace = _animationPlace + _screenStatusInstance.getStepSize();
       if (_animationPlace >= _allBeatsInstance.getPixelWidth()) {
-				_animationPlace = 0;
+        const copy = _animationPlace;
+				_animationPlace = _animationPlace % _screenStatusInstance.getStepSize();
+        _lastDrop = copy - _animationPlace;
       }
 
       requestAnimationFrame(plotMovingRectangle);
