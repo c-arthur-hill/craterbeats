@@ -605,9 +605,14 @@ var plotSineSingleton = (function() {
     var _canvas = document.getElementById("canvas"); 
     var _context = canvas.getContext("2d");
     var _screenStatusInstance = screenStatusSingleton.getInstance();
+    var _animationId;
 
     function getCanvasWidth() {
       return _canvas.width;
+    }
+
+    function cancelAnimation() {
+      window.cancelAnimationFrame(_animationId);
     }
 
     function plotSine() {
@@ -617,7 +622,7 @@ var plotSineSingleton = (function() {
       if (_animationPlace <= 0) {
 	_animationPlace = _context.canvas.width;
       }
-      setAnimationPlace(animationPlace);
+      setAnimationPlace(_animationPlace);
 
       var width = _context.canvas.width;
       var height = _context.canvas.height;
@@ -631,17 +636,17 @@ var plotSineSingleton = (function() {
       var amplitude = 40;
       var frequency = 100;
       while (x < width) {
-	y = height/2 + amplitude * Math.sin((x-getAnimationPlace())/frequency);
+	y = height/2 + amplitude * Math.sin((x-_animationPlace)/frequency);
 	_context.lineTo(x, y);
 	x = x + 1;
       }
       _context.stroke();
       _context.closePath();
       _context.save();
-      showAxes(_context);
+      plotAxes.plotAxes(_context);
       _context.restore();
 
-      requestAnimationFrame(plotSine);
+      _animationId = requestAnimationFrame(plotSine);
     }
 
     function setAnimationPlace(newVal) {
@@ -653,6 +658,7 @@ var plotSineSingleton = (function() {
     }
     
     return {
+      cancelAnimation: cancelAnimation,
       getCanvasWidth: getCanvasWidth,
       plotSine: plotSine,
       setAnimationPlace: setAnimationPlace,
@@ -685,7 +691,12 @@ var plotMovingRectangleSingleton = (function() {
     var _lastDrop = null;
     var _canvas = document.getElementById("canvas"); 
     var _context = canvas.getContext("2d");
-    
+    var _animationId = null;
+
+    function cancelAnimation() {
+      window.cancelAnimationFrame(_animationId);
+    }
+
     function getCanvasWidth() {
       return _canvas.width;
     }
@@ -742,7 +753,7 @@ var plotMovingRectangleSingleton = (function() {
         _lastDrop = copy - _animationPlace;
       }
 
-      requestAnimationFrame(plotMovingRectangle);
+      _animationId = requestAnimationFrame(plotMovingRectangle);
     }
 
     function setAnimationPlace() {
@@ -759,6 +770,7 @@ var plotMovingRectangleSingleton = (function() {
 
 
     return {
+      cancelAnimation: cancelAnimation,
       getCanvasWidth: getCanvasWidth,
       plotMovingRectangle: plotMovingRectangle,
       setAnimationPlace: setAnimationPlace,
@@ -858,6 +870,7 @@ var buttonFunctions = (function() {
 
   function beat() {
     _plotMovingRectangle.setCanvasWidth();
+    _plotMovingRectangle.cancelAnimation();
     _plotMovingRectangle.setAnimationPlace();
     _plotMovingRectangle.plotMovingRectangle();
   }
@@ -924,7 +937,8 @@ var buttonFunctions = (function() {
     _instruments.setIndex(prev.instrument, prev.octave, prev.note, prev.subNote);
   }
 
-  function sin() {
+  function sine() {
+    _plotSine.cancelAnimation();
     _plotSine.plotSine();
   }
 
@@ -945,7 +959,7 @@ var buttonFunctions = (function() {
     init: init,
     pulse: pulse,
     rightTone: rightTone,
-    sin: sin,
+    sine: sine,
     upOctave: upOctave
   }
 })()
