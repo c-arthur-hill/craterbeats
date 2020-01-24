@@ -22,6 +22,39 @@ var defaultSingleton = (function() {
   }
 })();
 
+var timbreSingleton = (function() {
+  var _instance = null;
+  
+  function createInstance() {
+    var _ctx = new AudioContext();
+    var _oscillators = [];
+    var _allInstrumentsInstance = allInstrumentSingleton.getInstance();
+
+    function start() {
+      // https://jsfiddle.net/puc4onau/
+      var instrument = _allInstrumentsInstance.getCurrentInstrument();
+      for(var i = 0; i < instrument.length(); ++i) {
+        _ctx.createOscillator();
+        
+        _oscillators.push();
+      }
+    }
+
+
+  }
+
+  function getInstance() {
+    if(!_instance) {
+      _instance = createInstance();
+    }
+    return _instance;
+  }
+  
+  return {
+    getInstance: getInstance
+  }
+})();
+
 var instrument = (function() {
   var _levels = 10;
   var _notes = 12;
