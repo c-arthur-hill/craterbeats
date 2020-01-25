@@ -18,8 +18,3 @@ body, input[type="text"], input[type="number"], input[type="text"]:focus, input[
   overflow-y: scroll;
   -webkit-overflow-scrolling: touch;
 }
-
-.middle {
-  display: block;
-  margin: 0 auto;
-}

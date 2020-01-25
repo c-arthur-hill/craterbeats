@@ -28,19 +28,43 @@ var timbreSingleton = (function() {
   function createInstance() {
     var _ctx = new AudioContext();
     var _oscillators = [];
+    var _amps = [];
     var _allInstrumentsInstance = allInstrumentSingleton.getInstance();
+    var _startTime = null;
 
     function start() {
       // https://jsfiddle.net/puc4onau/
-      var instrument = _allInstrumentsInstance.getCurrentInstrument();
-      for(var i = 0; i < instrument.length(); ++i) {
-        _ctx.createOscillator();
-        
-        _oscillators.push();
+      _startTime = _ctx.currentTime;
+      var frequencies = _allInstrumentsInstance.getFrequencies();
+      var instrument = allInstrumentsInstance.getCurrentInstrument();
+      var timbre = instrument.getTimbre();
+      var correction = instrument.getCorrection();
+      var p = 0;
+      for(var i = 0; i < timbre.length; ++i) {
+	for(var j = 0; j < i.length; ++j) {
+	  // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Advanced_techniques
+	  _oscillators[p] = _ctx.createOscillator();
+	  _oscillators[p].connect(_ctx.destination);
+	  _oscillators[p].frequency.value = frequencies[i][j];;
+
+	  _amps[i] = _ctx.createGain();
+	  _amps[i].gain.setValueAtTime((timbre[i][j] / correction), _startTime)
+	  ++p; 
+	}
+      }
+
+      _oscillators[0].connect(_amps[0]);
+      for(p = 1; p < _oscillators.length; ++p) {
+	_oscillators[p].connect(_amps[p].gain);
+      }
+      for(p = 0; p < _oscillators.length; ++p) {
+	_oscillators[p].start(_startTime);
       }
     }
 
-
+    return {
+     start: start
+    }
   }
 
   function getInstance() {
@@ -56,25 +80,30 @@ var timbreSingleton = (function() {
 })();
 
 var instrument = (function() {
-  var _levels = 10;
-  var _notes = 12;
-  var _octaves = 10;
-  var _subNotes = 10;
+  var _settings = {
+    levels: 10,
+    notes: 12,
+    octaves: 8, 
+  };
   var _timbre = [];
 
   function getTimbre() {
     return _timbre;
   }
 
+  function getCorrection() {
+    return _settings.notes * _settings.octaves * _settings.levels;
+  }
+
+  function getSettings() {
+    return _settings;
+  }
+
   function init() {
-    for(var o = 0; o < _octaves; ++o) {
+    for(var o = 0; o < _settings.octaves; ++o) {
       var octave = [];
-      for(var n = 0; n < _notes; ++n) {
-        var note = [];
-        for(var s = 0; s < _subNotes; ++s) {
-          note.push(Math.floor(Math.random()*10));
-        }
-        octave.push(note);
+      for(var n = 0; n < _settings.notes; ++n) {
+        octave.push(Math.floor(Math.random()*10));
       }
       _timbre.push(octave);
     }
@@ -82,14 +111,16 @@ var instrument = (function() {
   }
 
   function changeTimbreTone(octave, note, subnote, value) {
-    if (value < _levels) {
-      _timbre[octave][note][subnote] += value;
+    if (value < _settings.levels) {
+      _timbre[octave][note] += value;
     } else {
       alert("Error: Timbre value attempted to set outside _levels.");
     }
   }
 
   return {
+    getCorrection: getCorrection,
+    getSettings: getSettings,
     getTimbre: getTimbre,
     init: init,
     changeTimbreTone: changeTimbreTone
@@ -106,8 +137,8 @@ var allInstrumentsSingleton = (function() {
       instrument: 0, 
       octave: 4, 
       note: 6, 
-      subNote: 5
     };
+    var _frequencies = [];
 
     function addInstrument(instrument) {
       _allInstruments.push(instrument);
@@ -123,6 +154,28 @@ var allInstrumentsSingleton = (function() {
         return _allInstruments[_currentIndex.instrument];
       }
       return null;
+    }
+
+    function getFrequencies() {
+      if(_frequencies.length > 0) {
+	return _frequencies;
+      }
+      
+      var instrumentSettings = instrument.getSettings();
+      var octave;
+      var freq;
+      var base = Math.pow(2, (1/12));
+      var place = 0;
+      for(var o = 0; o < instrumentSettings.octaves; ++o) {
+	octave = [];
+	for( var n = 0; n < instrumentSettings.notes; ++n) {
+	  //A4 (440 hz) is 21st
+	  octave.push(440 * Math.pow(base, (place - 21)));
+	}
+	_frequencies.push(octave);
+      }
+
+      return _frequencies;
     }
 
     function getIndex() {
@@ -158,6 +211,7 @@ var allInstrumentsSingleton = (function() {
       addInstrument: addInstrument,
       getAllInstruments: getAllInstruments,
       getCurrentInstrument: getCurrentInstrument,
+      getFrequencies: getFrequencies,
       getIndex: getIndex,
       decreaseCurrent: decreaseCurrent,
       increaseCurrent: increaseCurrent,
@@ -229,27 +283,27 @@ var allBeatsSingleton = (function() {
   function createInstance() {
     var _allBeats = [];
     var _allStarts = [];
-		var _allPixelWidths = [];
+    var _allPixelWidths = [];
     // index of allBeats
     var _index = -1;
     // index of pulses
     var _pulseIndex = -1;
 
-		function calcOffset() {
-			return Math.floor(performance.now() - _allStarts[_index]) % pixelsToMicroSeconds(getPixelWidth());
-		}
+    function calcOffset() {
+      return Math.floor(performance.now() - _allStarts[_index]) % pixelsToMicroSeconds(getPixelWidth());
+    }
 
     function pixelsToMicroSeconds(px) {
-			var screenStatusInstance = screenStatusSingleton.getInstance();
+      var screenStatusInstance = screenStatusSingleton.getInstance();
       return Math.floor(px * 1000 / (screenStatusInstance.getFramesPerSecond() * screenStatusInstance.getStepSize()));
     }
 
     function microSecondsToPixels(ms) {
-			var screenStatusInstance = screenStatusSingleton.getInstance();
+      var screenStatusInstance = screenStatusSingleton.getInstance();
       return Math.floor(ms * screenStatusInstance.getFramesPerSecond() * screenStatusInstance.getStepSize() / 1000);
     }
 
-		function addBeat(repeat=1) {
+    function addBeat(repeat=1) {
       _allBeats[_index].push(beat.createBeat(calcOffset(), _index, _allBeats[_index].length, repeat));
       _pulseIndex = _allBeats[_index].length - 1;
     };
@@ -257,7 +311,7 @@ var allBeatsSingleton = (function() {
     function addEmptyBeat() {
       _allBeats.push([]);
       _allStarts.push(performance.now());
-			_allPixelWidths.push(1200);
+      _allPixelWidths.push(1200);
       _index = _index + 1;
       newBeat = beat.createBeat(0, _index, 0);
       _allBeats[_index].push(newBeat);
@@ -274,9 +328,9 @@ var allBeatsSingleton = (function() {
 
     function getCurrentPulseLength() {
       if(_index >= 0) {
-				return _allBeats[_index].length;
+	return _allBeats[_index].length;
       } else {
-				return 0;
+	return 0;
       }
     }
 
@@ -303,9 +357,9 @@ var allBeatsSingleton = (function() {
       }
     }
 
-		function setPixelWidth(x) {
-			_pixelWidth = x;
-		}
+    function setPixelWidth(x) {
+      _pixelWidth = x;
+    }
 
     function setPulseIndex(i) {
       if(i < getCurrentPulseLength()) {
@@ -324,11 +378,11 @@ var allBeatsSingleton = (function() {
       getCurrentPulseLength: getCurrentPulseLength,
       getIndex: getIndex,
       getIndexStart: getIndexStart,
-			getPixelWidth: getPixelWidth,
+      getPixelWidth: getPixelWidth,
       getPulseIndex: getPulseIndex,
       setIndex: setIndex,
       setPulseIndex: setPulseIndex,
-			setPixelWidth: setPixelWidth,
+      setPixelWidth: setPixelWidth,
       microSecondsToPixels: microSecondsToPixels,
       pixelsToMicroSeconds: pixelsToMicroSeconds
     }
@@ -396,10 +450,10 @@ var beat = (function() {
 
     getOffsetPixels() {
       var allBeatsInstance = allBeatsSingleton.getInstance();
-			var screenStatusInstance = screenStatusSingleton.getInstance();
+      var screenStatusInstance = screenStatusSingleton.getInstance();
       if(!this._offsetPixels || (allBeatsInstance.getPixelWidth() !== this._lastPixelWidth)) {
-				this._lastPixelWidth = allBeatsInstance.getPixelWidth();
-				this._offsetPixels = allBeatsInstance.microSecondsToPixels(this._offset);
+	this._lastPixelWidth = allBeatsInstance.getPixelWidth();
+	this._offsetPixels = allBeatsInstance.microSecondsToPixels(this._offset);
       }
       return this._offsetPixels;
     }
@@ -448,16 +502,16 @@ var colorSingleton = (function() {
     function setColors() {
       for(var leftColor = 0; leftColor < _colorVector.length; ++leftColor) {
 	for(var hue = 0; hue < _hueMatrix.length; ++hue) {
-		var subBeatColors = ['#bf0000'];
-		var ncsColorString = '-' + _colorVector[leftColor] + _hueMatrix[hue];
-		var completeString;
-		for(var blackness = 0; blackness < _blacknessVector.length; ++blackness) {
-			for(var chrom = 0; chrom < _chromaticVector.length; ++chrom) {
-				completeString = _blacknessVector[blackness] + _chromaticVector[chrom] + ncsColorString;
-				subBeatColors.push(w3color('ncs(' + completeString + ')').toHexString());
-			}
-		}
-		_colors.push(subBeatColors);
+	  var subBeatColors = ['#bf0000'];
+	  var ncsColorString = '-' + _colorVector[leftColor] + _hueMatrix[hue];
+	  var completeString;
+	  for(var blackness = 0; blackness < _blacknessVector.length; ++blackness) {
+	    for(var chrom = 0; chrom < _chromaticVector.length; ++chrom) {
+	      completeString = _blacknessVector[blackness] + _chromaticVector[chrom] + ncsColorString;
+	      subBeatColors.push(w3color('ncs(' + completeString + ')').toHexString());
+	    }
+	  }
+	  _colors.push(subBeatColors);
 	}    
       }
     }
@@ -490,8 +544,7 @@ var plotAxes = (function() {
     var startHeight = (height / 2) + ((axes / 2) * 11);
     var xMin = 0;
 	
-	ctx.save();
-    
+    ctx.save();
     ctx.beginPath();
     ctx.lineWidth = 1;
     ctx.strokeStyle = '#dee2e6';
@@ -521,11 +574,11 @@ var plotBarSingleton = (function() {
   var _instance = null;
 
   function createInstance() {
-    var _animationPlace = null;
     var _canvas = document.getElementById("canvas"); 
     var _context = canvas.getContext("2d");
     var _screenStatusInstance = screenStatusSingleton.getInstance();
     var _allInstruments = allInstrumentsSingleton.getInstance();
+
     function getCanvasWidth() {
       return _canvas.width;
     }
@@ -533,15 +586,10 @@ var plotBarSingleton = (function() {
     function plotBar() {
       _context.clearRect(0, 0, _context.canvas.width, _context.canvas.height);
 
-      _animationPlace = _animationPlace - _screenStatusInstance.getStepSize();
-      if (_animationPlace <= 0) {
-				_animationPlace = _context.canvas.width;
-      }
-
       var width = _context.canvas.width;
       var height = _context.canvas.height;
-      var initialX = Math.floor((width % 120) / 2);
-      var barWidth = Math.floor(width / 120);
+      var initialX = 0;
+      var barWidth = width / 12;
       var x = initialX;
       var y = 0;
       var currentInstrument = _allInstruments.getCurrentInstrument().getTimbre();
@@ -552,64 +600,58 @@ var plotBarSingleton = (function() {
       _context.lineWidth = barWidth-2;
 
       if(currentInstrument) {
-		for(var oct = 0; oct < currentInstrument.length; ++oct) {
-		x = initialX;
-		if(currentIndex.octave == oct) {
-			y += 200;
-			currentLoop = true;
-		} else {
-			y += 20;
+	for(var oct = 0; oct < currentInstrument.length; ++oct) {
+	  x = initialX;
+	  if(currentIndex.octave == oct) {
+	    y += 200;
+	    currentLoop = true;
+	  } else {
+	    y += 20;
+	  }
+	  _context.moveTo(x, y);
+	  for(var note = 0; note < currentInstrument[oct].length; ++note) {
+	      if(currentLoop) {
+		if(currentIndex.note == note) {
+		  _context.closePath();
+		  _context.stroke();
+		  _context.beginPath();
+		  _context.moveTo(x, y);
+		  _context.strokeStyle = '#bf0000';
 		}
-		_context.moveTo(x, y);
-		for(var note = 0; note < currentInstrument[oct].length; ++note) {
-			for(var subNote = 0; subNote < currentInstrument[oct][note].length; ++subNote) {
-				if(currentLoop) {
-		if(currentIndex.note == note && currentIndex.subNote == subNote) {
-			_context.closePath();
-			_context.stroke();
-			_context.beginPath();
-			_context.moveTo(x, y);
-			_context.strokeStyle = '#bf0000';
+		_context.lineTo(x, y-(5+(20 * currentInstrument[oct][note])));
+		if(currentIndex.note == note) {
+		  _context.closePath();
+		  _context.stroke();
+		  _context.beginPath();
+		  _context.strokeStyle = '#fff';
 		}
-		_context.lineTo(x, y-(5+(20 * currentInstrument[oct][note][subNote])));
-		if(currentIndex.note == note && currentIndex.subNote == subNote) {
-			_context.closePath();
-			_context.stroke();
-			_context.beginPath();
-			_context.strokeStyle = '#fff';
-		}
-				} else {
-		_context.lineTo(x, y-(2 * currentInstrument[oct][note][subNote]));
-				}
-				x += barWidth;
-				_context.moveTo(x, y);
-			}
-		}
-		if(currentLoop) {
-			currentLoop = false;
-		}
-	}
+	      } else {
+		_context.lineTo(x, y-(2 * currentInstrument[oct][note]));
+	      }
+	      x += barWidth;
+	      _context.moveTo(x, y);
+	    }
+
+	    if(currentLoop) {
+	      currentLoop = false;
+	    }
+	  }
       } else {
 	alert("No Instrument");
       }
-      _context.closePath();
       _context.stroke();
       requestAnimationFrame(plotBar);
     }
 
-    function setAnimationPlace(newVal) {
-      _animationPlace = newVal;
-    }
-
-    function setCanvasWidth(newWidth) {
-      _canvas.setAttribute('width', Math.floor(window.innerWidth));
-      setAnimationPlace(_animationPlace);
+    function setCanvasWidth() {
+      var windowWidth = Math.floor(window.innerWidth);
+      windowWidth = windowWidth - (windowWidth % instrument.getSettings().notes);
+      _canvas.setAttribute('width', windowWidth);
     }
   
     return {
       getCanvasWidth: getCanvasWidth,
       plotBar: plotBar,
-      setAnimationPlace: setAnimationPlace,
       setCanvasWidth: setCanvasWidth
     }
   }
@@ -618,8 +660,6 @@ var plotBarSingleton = (function() {
   function getInstance() {
     if(!_instance) {
       _instance = createInstance();
-      _instance.setCanvasWidth(Math.floor(window.innerWidth));
-      _instance.setAnimationPlace(_instance.getCanvasWidth());
     }
     return _instance;
   }
@@ -748,41 +788,41 @@ var plotMovingRectangleSingleton = (function() {
       _context.beginPath();
       _context.lineWidth = 3;
       for (var i = 0; i < allBeats[index].length; ++i) {
-				var position = _animationPlace - allBeats[index][i].getOffsetPixels();
-				_context.strokeStyle = allBeats[index][i].getColor();
-        
-				if (Math.abs(position) <= _screenStatusInstance.getStepSize()) {
-					bounce = 11;
-				}
+	var position = _animationPlace - allBeats[index][i].getOffsetPixels();
+	_context.strokeStyle = allBeats[index][i].getColor();
 
-        // default to left side
-				position = halfWidth - position;
-				if (position < 0) {
-					// try placing on right side
-					position = position +  _allBeatsInstance.getPixelWidth() + 1;
-				}
+	if (Math.abs(position) <= _screenStatusInstance.getStepSize()) {
+	  bounce = 11;
+	}
 
-				if (position >= 0 && position <= width) {
-					for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
-						_context.strokeRect(position, (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
-					}
-				} else if ((position - _lastDrop) >= 0 && (position - _lastDrop) <= width) {
-          // annoying bug... when _animationPlace overflows to zero below a bunch of items would drop off
-					for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
-            _context.strokeRect((position - _lastDrop), (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
-          }
-        }
+	// default to left side
+	position = halfWidth - position;
+	if (position < 0) {
+	  // try placing on right side
+	  position = position +  _allBeatsInstance.getPixelWidth() + 1;
+	}
 
-				if (bounce) {
-					bounce = 0;
-				}
+	if (position >= 0 && position <= width) {
+	  for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
+	    _context.strokeRect(position, (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
+	  }
+	} else if ((position - _lastDrop) >= 0 && (position - _lastDrop) <= width) {
+	  // annoying bug... when _animationPlace overflows to zero below a bunch of items would drop off
+	  for(var g = 0; g < allBeats[index][i].getNotes().length; ++g) {
+	    _context.strokeRect((position - _lastDrop), (bounce + startHeight - (11 * allBeats[index][i].getNotes()[g])), 10, 10);
+	  }
+	}
+
+	if (bounce) {
+		bounce = 0;
+	}
 
       }
 
       _animationPlace = _animationPlace + _screenStatusInstance.getStepSize();
       if (_animationPlace >= _allBeatsInstance.getPixelWidth()) {
         const copy = _animationPlace;
-				_animationPlace = _animationPlace % _screenStatusInstance.getStepSize();
+	_animationPlace = _animationPlace % _screenStatusInstance.getStepSize();
         _lastDrop = copy - _animationPlace;
       }
 
@@ -898,6 +938,7 @@ var buttonFunctions = (function() {
   }
 
   function bar() {
+    _plotBar.setCanvasWidth();
     _plotBar.plotBar();
   }
 
