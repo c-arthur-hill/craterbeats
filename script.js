@@ -52,7 +52,6 @@ var timbreSingleton = (function() {
 	  ++p; 
 	}
       }
-      debugger;
       _oscillators[0].connect(_amps[0]);
       for(p = 1; p < _oscillators.length; ++p) {
 	_oscillators[p].connect(_amps[p].gain);
@@ -79,39 +78,82 @@ var timbreSingleton = (function() {
   }
 })();
 
+var instrumentSettingsSingleton = (function() {
+  var _instance = null;
+
+  function createInstance() {
+    var _settings = {
+      maxLevels: 10,
+      maxNotes: 12,
+      maxOctaves: 8, 
+      currentInstrument: 0, 
+      currentOctave: 4, 
+      currentNote: 8 
+    };
+
+    function getSettings() {
+      return _settings;
+    }
+
+    function setIndex(i, o=-1, n=-1) {
+      _settings.currentInstrument = i;
+      if(o > -1) {
+	_settings.currentOctave = o;
+      }
+      if(n > -1) {
+        _settings.currentNote = n;
+      }
+    }
+
+    return {
+      getSettings: getSettings,
+      setIndex: setIndex
+    }
+  }
+
+  function getInstance() {
+    if(!_instance) {
+      _instance = createInstance();
+    }
+    return _instance;
+  }
+  
+  return {
+    getInstance: getInstance
+  }
+})();
+
 var instrument = (function() {
-  var _settings = {
-    levels: 10,
-    notes: 12,
-    octaves: 8, 
-  };
   var _timbre = [];
+  var _settings = instrumentSettingsSingleton.getInstance().getSettings();
 
   function getTimbre() {
     return _timbre;
   }
 
   function getCorrection() {
-    return _settings.notes * _settings.octaves * _settings.levels;
-  }
-
-  function getSettings() {
-    return _settings;
+    return _settings.maxNotes * _settings.maxOctaves * _settings.maxLevels;
   }
 
   function init() {
-    for(var o = 0; o < _settings.octaves; ++o) {
-      var octave = [];
-      for(var n = 0; n < _settings.notes; ++n) {
-        octave.push(Math.floor(Math.random()*10));
+    var octave = [];
+    for(var o = 0; o < _settings.maxOctaves; ++o) {
+      octave = [];
+      for(var n = 0; n < _settings.maxNotes; ++n) {
+	if (o == _settings.currentOctave && n == _settings.currentNote) {
+	  octave.push(5);
+	} else {
+	  // random 0 or 1
+	  octave.push(Math.floor(Math.random() * Math.floor(2)));
+	}
       }
       _timbre.push(octave);
     }
     return this;      
   }
 
-  function changeTimbreTone(octave, note, subnote, value) {
-    if (value < _settings.levels) {
+  function changeTimbreTone(octave, note, value) {
+    if (value < _settings.maxLevels) {
       _timbre[octave][note] += value;
     } else {
       alert("Error: Timbre value attempted to set outside _levels.");
@@ -120,7 +162,6 @@ var instrument = (function() {
 
   return {
     getCorrection: getCorrection,
-    getSettings: getSettings,
     getTimbre: getTimbre,
     init: init,
     changeTimbreTone: changeTimbreTone
@@ -133,16 +174,13 @@ var allInstrumentsSingleton = (function() {
   function createInstance() {
     var _allInstruments = [];
     // instrument, octave, note, subnote
-    var _currentIndex = {
-      instrument: 0, 
-      octave: 4, 
-      note: 6, 
-    };
     var _frequencies = [];
+    var _settingsInstance = instrumentSettingsSingleton.getInstance()
+    var _settings = _settingsInstance.getSettings();
 
     function addInstrument(instrument) {
       _allInstruments.push(instrument);
-      _currentIndex.instrument = _allInstruments.length - 1;
+      _settingsInstance.setIndex(_allInstruments.length - 1);
     }
     
     function getAllInstruments() {
@@ -150,8 +188,8 @@ var allInstrumentsSingleton = (function() {
     }
 
     function getCurrentInstrument() {
-      if(_currentIndex.instrument >= (_allInstruments.length-1)) {
-        return _allInstruments[_currentIndex.instrument];
+      if(_settings.currentInstrument >= (_allInstruments.length-1)) {
+        return _allInstruments[_settings.currentInstrument];
       }
       return null;
     }
@@ -161,14 +199,13 @@ var allInstrumentsSingleton = (function() {
 	return _frequencies;
       }
       
-      var instrumentSettings = instrument.getSettings();
       var octave;
       var freq;
       var base = Math.pow(2, (1/12));
       var place = 0;
-      for(var o = 0; o < instrumentSettings.octaves; ++o) {
+      for(var o = 0; o < _settings.maxOctaves; ++o) {
 	octave = [];
-	for( var n = 0; n < instrumentSettings.notes; ++n) {
+	for( var n = 0; n < _settings.maxNotes; ++n) {
 	  //A4 (440 hz) is 21st
 	  octave.push(440 * Math.pow(base, (place - 21)));
 	}
@@ -178,33 +215,16 @@ var allInstrumentsSingleton = (function() {
       return _frequencies;
     }
 
-    function getIndex() {
-      return _currentIndex;
-    }
-
     function decreaseCurrent() {
-      _allInstruments[_currentIndex.instrument].changeTimbreTone(_currentIndex.octave, _currentIndex.note, _currentIndex.subNote, -1);
+      _allInstruments[_settings.currentInstrument].changeTimbreTone(_settings.currentOctave, _settings.currentNote, -1);
     }
 
     function increaseCurrent() {
-      _allInstruments[_currentIndex.instrument].changeTimbreTone(_currentIndex.octave, _currentIndex.note, _currentIndex.subNote, 1);
+      _allInstruments[_settings.currentInstrument].changeTimbreTone(_settings.currentOctave, _settings.currentNote, 1);
     }
 
     function removeInstrument(name) {
       delete _allInstruments[name];
-    }
-
-    function setIndex(i, o=-1, n=-1, s=-1) {
-      _currentIndex.instrument = i;
-      if(o > -1) {
-        _currentIndex.octave = o;
-      }
-      if(n > -1) {
-        _currentIndex.note = n;
-      }
-      if(s > -1) {
-        _currentIndex.subNote = s;
-      }
     }
 
     return {
@@ -212,11 +232,9 @@ var allInstrumentsSingleton = (function() {
       getAllInstruments: getAllInstruments,
       getCurrentInstrument: getCurrentInstrument,
       getFrequencies: getFrequencies,
-      getIndex: getIndex,
       decreaseCurrent: decreaseCurrent,
       increaseCurrent: increaseCurrent,
       removeInstrument: removeInstrument,
-      setIndex: setIndex
     }
   }
 
@@ -578,6 +596,7 @@ var plotBarSingleton = (function() {
     var _context = canvas.getContext("2d");
     var _screenStatusInstance = screenStatusSingleton.getInstance();
     var _allInstruments = allInstrumentsSingleton.getInstance();
+    var _instrumentSettings = instrumentSettingsSingleton.getInstance().getSettings();
 
     function getCanvasWidth() {
       return _canvas.width;
@@ -593,7 +612,6 @@ var plotBarSingleton = (function() {
       var x = initialX;
       var y = 0;
       var currentInstrument = _allInstruments.getCurrentInstrument().getTimbre();
-      var currentIndex = _allInstruments.getIndex();
       var currentLoop = false;
       _context.beginPath();
       _context.strokeStyle = '#fff';
@@ -602,7 +620,7 @@ var plotBarSingleton = (function() {
       if(currentInstrument) {
 	for(var oct = 0; oct < currentInstrument.length; ++oct) {
 	  x = initialX;
-	  if(currentIndex.octave == oct) {
+	  if(_instrumentSettings.currentOctave == oct) {
 	    y += 200;
 	    currentLoop = true;
 	  } else {
@@ -611,7 +629,7 @@ var plotBarSingleton = (function() {
 	  _context.moveTo(x, y);
 	  for(var note = 0; note < currentInstrument[oct].length; ++note) {
 	      if(currentLoop) {
-		if(currentIndex.note == note) {
+		if(_instrumentSettings.currentNote == note) {
 		  _context.closePath();
 		  _context.stroke();
 		  _context.beginPath();
@@ -619,7 +637,7 @@ var plotBarSingleton = (function() {
 		  _context.strokeStyle = '#bf0000';
 		}
 		_context.lineTo(x, y-(5+(20 * currentInstrument[oct][note])));
-		if(currentIndex.note == note) {
+		if(_instrumentSettings.currentNote == note) {
 		  _context.closePath();
 		  _context.stroke();
 		  _context.beginPath();
@@ -645,7 +663,7 @@ var plotBarSingleton = (function() {
 
     function setCanvasWidth() {
       var windowWidth = document.body.clientWidth;
-      var notesNum = instrument.getSettings().notes;
+      var notesNum = _instrumentSettings.maxNotes;
       var columnWidth = Math.floor(windowWidth / (notesNum+1));
       // adding half remainder to each margin
       var marginWidth = Math.floor(columnWidth/2 + ((windowWidth % notesNum) / 2));
@@ -879,6 +897,7 @@ var buttonFunctions = (function() {
   var _allBeats = allBeatsSingleton.getInstance();
   var _instruments = allInstrumentsSingleton.getInstance();
   var _timbre = timbreSingleton.getInstance();
+  var _instrumentSettings = instrumentSettingsSingleton.getInstance();
 
   function addBeatButton(value) {
     var container = document.getElementById('beatButtonColumn');
@@ -973,8 +992,8 @@ var buttonFunctions = (function() {
   }
 
   function downOctave() {
-    var prev = _instruments.getIndex();
-    _instruments.setIndex(prev.instrument, prev.octave-1, prev.note, prev.subNote);
+    var prev = _instrumentSettings.getSettings();
+    _instrumentSettings.setIndex(prev.currentInstrument, prev.currentOctave-1, prev.currentNote);
   }
 
   function increaseTone() {
@@ -986,14 +1005,14 @@ var buttonFunctions = (function() {
   }
   
   function leftTone() {
-    var prev = _instruments.getIndex();
-    if(prev.subNote == 0) {
-      prev.note -= 1;
-      prev.subNote = 9;
+    var prev = _instrumentSettings.getSettings();
+    if(prev.currentNote == 0) {
+      prev.currentOctave -= 1;
+      prev.currentNote = 9;
     } else {
-      prev.subNote -= 1;
+      prev.currentNote -= 1;
     }
-    _instruments.setIndex(prev.instrument, prev.octave, prev.note, prev.subNote);
+    _instrumentSettings.setIndex(prev.currentInstrument, prev.currentOctave, prev.currentNote);
   }
 
   function playTimbre() {
@@ -1012,14 +1031,14 @@ var buttonFunctions = (function() {
   }
 
   function rightTone() {
-    var prev = _instruments.getIndex();
-    if(prev.subNote == 9) {
-      prev.note += 1;
-      prev.subNote = 0;
+    var prev = _instrumentSettings.getSettings();
+    if(prev.currentNote == 11) {
+      prev.currentOctave += 1;
+      prev.currentNote = 0;
     } else {
-      prev.subNote += 1;
+      prev.currentNote += 1;
     }
-    _instruments.setIndex(prev.instrument, prev.octave, prev.note, prev.subNote);
+    _instrumentSettings.setIndex(prev.currentInstrument, prev.currentOctave, prev.currentNote);
   }
 
   function sine() {
@@ -1028,8 +1047,8 @@ var buttonFunctions = (function() {
   }
 
   function upOctave() {
-    var prev = _instruments.getIndex();
-    _instruments.setIndex(prev.instrument, prev.octave+1, prev.note, prev.subNote);
+    var prev = _instrumentSettings.getSettings();
+    _instrumentSettings.setIndex(prev.currentInstrument, prev.currentOctave+1, prev.currentNote);
   }
 
   return {
@@ -1052,18 +1071,29 @@ var buttonFunctions = (function() {
 
 document.onkeydown = function(e) {
   e = e || window.event;
-  switch(e.which || e.keyCode) {
-    case 37: // left
-      buttonFunctions.leftTone();
-      break;
-    case 38: //up
-      buttonFunctions.downOctave(); 
-      break;
-    case 39: //right
-      buttonFunctions.rightTone();
-      break;
-    case 40:
-      buttonFunctions.upOctave();
-      break;
+  if(e.shiftKey) {
+    switch(e.which || e.keyCode) {
+      case 79:
+	buttonFunctions.increaseTone();
+	break;
+      case 78:
+	buttonFunctions.decreaseTone();
+	break;
+    }
+  } else {
+    switch(e.which || e.keyCode) {
+      case 74: // left
+	buttonFunctions.leftTone();
+	break;
+      case 79: //up
+	buttonFunctions.downOctave(); 
+	break;
+      case 75: //right
+	buttonFunctions.rightTone();
+	break;
+      case 78:
+	buttonFunctions.upOctave();
+	break;
+    }
   }
 };
