@@ -588,8 +588,8 @@ var plotBarSingleton = (function() {
 
       var width = _context.canvas.width;
       var height = _context.canvas.height;
-      var initialX = 0;
       var barWidth = width / 12;
+      var initialX = Math.floor(barWidth / 2);
       var x = initialX;
       var y = 0;
       var currentInstrument = _allInstruments.getCurrentInstrument().getTimbre();
@@ -644,9 +644,17 @@ var plotBarSingleton = (function() {
     }
 
     function setCanvasWidth() {
-      var windowWidth = Math.floor(window.innerWidth);
-      windowWidth = windowWidth - (windowWidth % instrument.getSettings().notes);
-      _canvas.setAttribute('width', windowWidth);
+      var windowWidth = document.body.clientWidth;
+      var notesNum = instrument.getSettings().notes;
+      var columnWidth = Math.floor(windowWidth / (notesNum+1));
+      // adding half remainder to each margin
+      var marginWidth = Math.floor(columnWidth/2 + ((windowWidth % notesNum) / 2));
+      var marginString = marginWidth.toString() + 'px';
+      var canvasWidth = columnWidth * notesNum;
+      _canvas.setAttribute('width', canvasWidth);
+      _canvas.style.marginLeft = marginString;
+      _canvas.style.marginRight = marginString;
+      debugger;
     }
   
     return {
