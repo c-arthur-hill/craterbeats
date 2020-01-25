@@ -29,30 +29,30 @@ var timbreSingleton = (function() {
     var _ctx = new AudioContext();
     var _oscillators = [];
     var _amps = [];
-    var _allInstrumentsInstance = allInstrumentSingleton.getInstance();
+    var _allInstrumentsInstance = allInstrumentsSingleton.getInstance();
     var _startTime = null;
 
     function start() {
       // https://jsfiddle.net/puc4onau/
       _startTime = _ctx.currentTime;
       var frequencies = _allInstrumentsInstance.getFrequencies();
-      var instrument = allInstrumentsInstance.getCurrentInstrument();
+      var instrument = _allInstrumentsInstance.getCurrentInstrument();
       var timbre = instrument.getTimbre();
       var correction = instrument.getCorrection();
       var p = 0;
       for(var i = 0; i < timbre.length; ++i) {
-	for(var j = 0; j < i.length; ++j) {
+	for(var j = 0; j < timbre[i].length; ++j) {
 	  // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Advanced_techniques
 	  _oscillators[p] = _ctx.createOscillator();
 	  _oscillators[p].connect(_ctx.destination);
 	  _oscillators[p].frequency.value = frequencies[i][j];;
 
-	  _amps[i] = _ctx.createGain();
-	  _amps[i].gain.setValueAtTime((timbre[i][j] / correction), _startTime)
+	  _amps[p] = _ctx.createGain();
+	  _amps[p].gain.setValueAtTime((timbre[i][j] / correction), _startTime)
 	  ++p; 
 	}
       }
-
+      debugger;
       _oscillators[0].connect(_amps[0]);
       for(p = 1; p < _oscillators.length; ++p) {
 	_oscillators[p].connect(_amps[p].gain);
@@ -654,7 +654,6 @@ var plotBarSingleton = (function() {
       _canvas.setAttribute('width', canvasWidth);
       _canvas.style.marginLeft = marginString;
       _canvas.style.marginRight = marginString;
-      debugger;
     }
   
     return {
@@ -879,6 +878,7 @@ var buttonFunctions = (function() {
   var _colors = colorSingleton.getInstance();
   var _allBeats = allBeatsSingleton.getInstance();
   var _instruments = allInstrumentsSingleton.getInstance();
+  var _timbre = timbreSingleton.getInstance();
 
   function addBeatButton(value) {
     var container = document.getElementById('beatButtonColumn');
@@ -996,6 +996,9 @@ var buttonFunctions = (function() {
     _instruments.setIndex(prev.instrument, prev.octave, prev.note, prev.subNote);
   }
 
+  function playTimbre() {
+    _timbre.start();
+  }
   function pulse() {
     const now = performance.now();
     const pulseButton = document.getElementById('pulse');
@@ -1039,6 +1042,7 @@ var buttonFunctions = (function() {
     leftTone: leftTone,
     newBeat: newBeat,
     init: init,
+    playTimbre: playTimbre,
     pulse: pulse,
     rightTone: rightTone,
     sine: sine,

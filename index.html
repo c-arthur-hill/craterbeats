@@ -42,13 +42,16 @@
             </div>
 --->
             <div class="form-row">
+              <div class="col-12 col-md-1 mt-2 mb-2 mb-md-0">
+                <button type="button" onclick="buttonFunctions.playTimbre()"  class="btn btn-dark btn-outline-light lower btn-block">&#x1f50a;</button>
+              </div>
               <div class="col-6 col-md-2 mt-2">
                 <button type="button" onclick="buttonFunctions.leftTone()"  class="btn btn-dark btn-outline-light lower btn-block">&larr;</button>
               </div>
               <div class="col-6 col-md-2 mt-2">
                 <button type="button" onclick="buttonFunctions.rightTone()"  class="btn btn-dark btn-outline-light higher btn-block">&rarr;</button>
               </div>
-              <div class="col-12 mt-2 col-md-4">
+              <div class="col-12 mt-2 col-md-3">
                 <div class="input-group d-flex">
                   <button type="button" onclick="buttonFunctions.decreaseTone()" class="btn btn-dark btn-outline-light minus form-control">-</button>
                   <input class="form-control text-light bg-dark border-white tone" type="number" min="0" max="9" value="5" aria-label="periods in beat">
