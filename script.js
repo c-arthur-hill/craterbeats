@@ -44,20 +44,15 @@ var timbreSingleton = (function() {
 	for(var j = 0; j < timbre[i].length; ++j) {
 	  // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Advanced_techniques
 	  _oscillators[p] = _ctx.createOscillator();
-	  _oscillators[p].connect(_ctx.destination);
 	  _oscillators[p].frequency.value = frequencies[i][j];;
 
 	  _amps[p] = _ctx.createGain();
 	  _amps[p].gain.setValueAtTime((timbre[i][j] / correction), _startTime)
+	  _oscillators[p].connect(_amps[p]);
+	  _amps[p].connect(_ctx.destination);
+	  _oscillators[p].start(_startTime);
 	  ++p; 
 	}
-      }
-      _oscillators[0].connect(_amps[0]);
-      for(p = 1; p < _oscillators.length; ++p) {
-	_oscillators[p].connect(_amps[p].gain);
-      }
-      for(p = 0; p < _oscillators.length; ++p) {
-	_oscillators[p].start(_startTime);
       }
     }
 
@@ -97,6 +92,7 @@ var instrumentSettingsSingleton = (function() {
 
     function setIndex(i, o=-1, n=-1) {
       _settings.currentInstrument = i;
+
       if(o > -1) {
 	_settings.currentOctave = o;
       }
@@ -144,7 +140,7 @@ var instrument = (function() {
 	  octave.push(5);
 	} else {
 	  // random 0 or 1
-	  octave.push(Math.floor(Math.random() * Math.floor(2)));
+	  octave.push(0);
 	}
       }
       _timbre.push(octave);
@@ -207,7 +203,8 @@ var allInstrumentsSingleton = (function() {
 	octave = [];
 	for( var n = 0; n < _settings.maxNotes; ++n) {
 	  //A4 (440 hz) is 21st
-	  octave.push(440 * Math.pow(base, (place - 21)));
+	  octave.push(440 * Math.pow(base, (place - 57)));
+	  ++place
 	}
 	_frequencies.push(octave);
       }
