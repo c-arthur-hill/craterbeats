@@ -1069,7 +1069,7 @@ var buttonFunctions = (function() {
 document.onkeydown = function(e) {
   e = e || window.event;
   if(e.shiftKey) {
-    switch(e.which || e.keyCode) {
+  /**  switch(e.which || e.keyCode) {
       case 79:
 	buttonFunctions.increaseTone();
 	break;
@@ -1077,19 +1077,26 @@ document.onkeydown = function(e) {
 	buttonFunctions.decreaseTone();
 	break;
     }
+    **/
   } else {
     switch(e.which || e.keyCode) {
-      case 74: // left
+      case 72: // left
 	buttonFunctions.leftTone();
 	break;
-      case 79: //up
+      case 75: //up
 	buttonFunctions.downOctave(); 
 	break;
-      case 75: //right
+      case 76: //right
 	buttonFunctions.rightTone();
 	break;
-      case 78:
+      case 74: //down
 	buttonFunctions.upOctave();
+	break;
+      case 79:
+	buttonFunctions.increaseTone();
+	break;
+      case 78:
+	buttonFunctions.decreaseTone();
 	break;
     }
   }
