@@ -30,40 +30,89 @@ var timbreSingleton = (function() {
     var _oscillators = [];
     var _amps = [];
     var _allInstrumentsInstance = allInstrumentsSingleton.getInstance();
+    var _settings = instrumentSettingsSingleton.getInstance().getSettings();
     var _startTime = null;
+    var _started = false;
+    var _muted = true;
 
-    function start() {
-      // https://jsfiddle.net/puc4onau/
+    function setup() {
       _startTime = _ctx.currentTime;
       var frequencies = _allInstrumentsInstance.getFrequencies();
       var instrument = _allInstrumentsInstance.getCurrentInstrument();
       var timbre = instrument.getTimbre();
       var correction = instrument.getCorrection();
-      var p = 0;
+      var octaveOscillators;
+      var octaveAmps;
       for(var i = 0; i < timbre.length; ++i) {
-	for(var j = 0; j < timbre[i].length; ++j) {
-	  // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Advanced_techniques
-	  _oscillators[p] = _ctx.createOscillator();
-	  _oscillators[p].frequency.value = frequencies[i][j];;
+        octaveOscillators = [];
+        octaveAmps = [];
+        for(var j = 0; j < timbre[i].length; ++j) {
+          // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Advanced_techniques
+          octaveOscillators.push(_ctx.createOscillator());
+          octaveAmps.push(_ctx.createGain());
+          octaveOscillators[j].frequency.value = frequencies[i][j];;
+          octaveAmps[j].gain.value = 0;
+          octaveOscillators[j].connect(octaveAmps[j]);
+          octaveAmps[j].connect(_ctx.destination);
+        }
+        _oscillators.push(octaveOscillators);
+        _amps.push(octaveAmps);
+      }
+    }
+    
+    function start() {
+      _startTime = _ctx.currentTime;
+      var timbre = instrument.getTimbre();
+      var correction = instrument.getCorrection();
+      for(var i = 0; i < _oscillators.length; ++i) {
+        for(var j = 0; j < _oscillators[i].length; ++j) {
+          if (!_started) {
+            _oscillators[i][j].start(_startTime);
+          }
+          _amps[i][j].gain.value = (timbre[i][j] / correction);
+        }
+      }
+      _started = true;
+      _muted = false;
+    }
 
-	  _amps[p] = _ctx.createGain();
-	  _amps[p].gain.setValueAtTime((timbre[i][j] / correction), _startTime)
-	  _oscillators[p].connect(_amps[p]);
-	  _amps[p].connect(_ctx.destination);
-	  _oscillators[p].start(_startTime);
-	  ++p; 
-	}
+    function stop() {
+      var stopTime = performance.now();
+
+      for(var i = 0; i < _oscillators.length; ++i) {
+        for(var j = 0; j < _oscillators[i].length; ++j) {
+          _amps[i].gain.value = 0;
+        }
+      }
+      _muted = true;
+    }
+
+    function toggle() {
+      if(_muted) {
+        start();
+      } else {
+        stop();
       }
     }
 
+    function updateTone() {
+      // update this to separate method that keeps const vol
+      var correction = instrument.getCorrection();
+      var timbre = instrument.getTimbre();
+      _amps[_settings.currentOctave][_settings.currentNote].gain.value = (timbre[_settings.currentOctave][_settings.currentNote] / correction); 
+    }
+
     return {
-     start: start
+      setup: setup,
+      toggle: toggle,
+      updateTone: updateTone,
     }
   }
 
   function getInstance() {
     if(!_instance) {
       _instance = createInstance();
+      _instance.setup();
     }
     return _instance;
   }
@@ -986,6 +1035,7 @@ var buttonFunctions = (function() {
 
   function decreaseTone() {
     _instruments.decreaseCurrent();
+    _timbre.updateTone();
   }
 
   function downOctave() {
@@ -995,6 +1045,7 @@ var buttonFunctions = (function() {
 
   function increaseTone() {
     _instruments.increaseCurrent();
+    _timbre.updateTone();
   }
   
   function init() {
@@ -1012,9 +1063,6 @@ var buttonFunctions = (function() {
     _instrumentSettings.setIndex(prev.currentInstrument, prev.currentOctave, prev.currentNote);
   }
 
-  function playTimbre() {
-    _timbre.start();
-  }
   function pulse() {
     const now = performance.now();
     const pulseButton = document.getElementById('pulse');
@@ -1043,6 +1091,10 @@ var buttonFunctions = (function() {
     _plotSine.plotSine();
   }
 
+  function toggleTimbre() {
+    _timbre.toggle();
+  }
+
   function upOctave() {
     var prev = _instrumentSettings.getSettings();
     _instrumentSettings.setIndex(prev.currentInstrument, prev.currentOctave+1, prev.currentNote);
@@ -1058,10 +1110,10 @@ var buttonFunctions = (function() {
     leftTone: leftTone,
     newBeat: newBeat,
     init: init,
-    playTimbre: playTimbre,
     pulse: pulse,
     rightTone: rightTone,
     sine: sine,
+    toggleTimbre: toggleTimbre,
     upOctave: upOctave
   }
 })()
