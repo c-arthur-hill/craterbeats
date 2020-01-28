@@ -1,3 +1,5 @@
+//16 khz is sampling rate
+
 var defaultRevealingModule = (function() {
   return {
   }
@@ -47,13 +49,19 @@ var timbreSingleton = (function() {
         octaveOscillators = [];
         octaveAmps = [];
         for(var j = 0; j < timbre[i].length; ++j) {
-          // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Advanced_techniques
-          octaveOscillators.push(_ctx.createOscillator());
-          octaveAmps.push(_ctx.createGain());
-          octaveOscillators[j].frequency.value = frequencies[i][j];;
-          octaveAmps[j].gain.value = 0;
-          octaveOscillators[j].connect(octaveAmps[j]);
-          octaveAmps[j].connect(_ctx.destination);
+          noteOscillators = [];
+          noteAmps = [];
+          for(var k = 0; k < timbre[i][j].length; ++k) {
+            // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Advanced_techniques
+            noteOscillators.push(_ctx.createOscillator());
+            noteAmps.push(_ctx.createGain());
+            noteOscillators[j].frequency.value = frequencies[i][j];;
+            noteAmps[j].gain.value = 0;
+            noteOscillators[j].connect(noteAmps[j]);
+            noteAmps[j].connect(_ctx.destination);
+          }
+          octaveOscillators.push(noteOscillators);
+          octaveAmps.push(noteAmps);
         }
         _oscillators.push(octaveOscillators);
         _amps.push(octaveAmps);
@@ -66,10 +74,12 @@ var timbreSingleton = (function() {
       var correction = instrument.getCorrection();
       for(var i = 0; i < _oscillators.length; ++i) {
         for(var j = 0; j < _oscillators[i].length; ++j) {
-          if (!_started) {
-            _oscillators[i][j].start(_startTime);
+          for(var k = 0; k < _oscillators[i][j].length; ++k) {
+            if (!_started) {
+              _oscillators[i][j][k].start(_startTime);
+            }
+            _amps[i][j][k].gain.value = (timbre[i][j][k] / correction);
           }
-          _amps[i][j].gain.value = (timbre[i][j] / correction);
         }
       }
       _started = true;
@@ -81,7 +91,9 @@ var timbreSingleton = (function() {
 
       for(var i = 0; i < _oscillators.length; ++i) {
         for(var j = 0; j < _oscillators[i].length; ++j) {
-          _amps[i].gain.value = 0;
+          for(var k = 0; k < _oscillators[i][j].length; ++k) {
+            _amps[i].gain.value = 0;
+          }
         }
       }
       _muted = true;
@@ -99,7 +111,7 @@ var timbreSingleton = (function() {
       // update this to separate method that keeps const vol
       var correction = instrument.getCorrection();
       var timbre = instrument.getTimbre();
-      _amps[_settings.currentOctave][_settings.currentNote].gain.value = (timbre[_settings.currentOctave][_settings.currentNote] / correction); 
+      _amps[_settings.currentOctave][_settings.currentNote][_settings.currentSubNote].gain.value = (timbre[_settings.currentOctave][_settings.currentNote][_settings.currentSubNote] / correction); 
     }
 
     return {
@@ -127,26 +139,31 @@ var instrumentSettingsSingleton = (function() {
 
   function createInstance() {
     var _settings = {
-      maxLevels: 10,
+      maxLevels: 100,
       maxNotes: 12,
+      maxSubNotes: 10,
       maxOctaves: 8, 
       currentInstrument: 0, 
       currentOctave: 4, 
-      currentNote: 8 
+      currentNote: 8,
+      currentSubNote: 0
     };
 
     function getSettings() {
       return _settings;
     }
 
-    function setIndex(i, o=-1, n=-1) {
+    function setIndex(i, o=-1, n=-1, s=-1) {
       _settings.currentInstrument = i;
 
       if(o > -1) {
-	_settings.currentOctave = o;
+	      _settings.currentOctave = o;
       }
       if(n > -1) {
         _settings.currentNote = n;
+      }
+      if(s > -1) {
+        _settings.currentSubNote = s;
       }
     }
 
@@ -177,20 +194,25 @@ var instrument = (function() {
   }
 
   function getCorrection() {
-    return _settings.maxNotes * _settings.maxOctaves * _settings.maxLevels;
+    return _settings.maxSubNotes * _settings.maxNotes * _settings.maxOctaves * _settings.maxLevels;
   }
 
   function init() {
-    var octave = [];
+    var octave;
+    var note;
     for(var o = 0; o < _settings.maxOctaves; ++o) {
       octave = [];
       for(var n = 0; n < _settings.maxNotes; ++n) {
-	if (o == _settings.currentOctave && n == _settings.currentNote) {
-	  octave.push(5);
-	} else {
-	  // random 0 or 1
-	  octave.push(0);
-	}
+        note = [];
+        for(var s = 0; s < _settings.maxSubNotes; ++s) {
+          if (o == _settings.currentOctave && n == _settings.currentNote && s == _settings.currentSubNote) {
+            note.push(5);
+          } else {
+            // random 0 or 1
+            note.push(0);
+          }
+        }
+        octave.push(note);
       }
       _timbre.push(octave);
     }
@@ -241,32 +263,37 @@ var allInstrumentsSingleton = (function() {
 
     function getFrequencies() {
       if(_frequencies.length > 0) {
-	return _frequencies;
+        return _frequencies;
       }
       
       var octave;
+      var note;
       var freq;
-      var base = Math.pow(2, (1/12));
+      var base = Math.pow(2, (1/120));
       var place = 0;
       for(var o = 0; o < _settings.maxOctaves; ++o) {
-	octave = [];
-	for( var n = 0; n < _settings.maxNotes; ++n) {
-	  //A4 (440 hz) is 21st
-	  octave.push(440 * Math.pow(base, (place - 57)));
-	  ++place
-	}
-	_frequencies.push(octave);
+        octave = [];
+        for(var n = 0; n < _settings.maxNotes; ++n) {
+          //A4 (440 hz) is 21st
+          note = [];
+          for(var s = 0; s < _settings.maxSubNotes; ++s) {
+            octave.push(440 * Math.pow(base, (place - 500)));
+            ++place
+          }
+          octave.push(note);
+        }
+        _frequencies.push(octave);
       }
 
       return _frequencies;
     }
 
     function decreaseCurrent() {
-      _allInstruments[_settings.currentInstrument].changeTimbreTone(_settings.currentOctave, _settings.currentNote, -1);
+      _allInstruments[_settings.currentInstrument].changeTimbreTone(_settings.currentOctave, _settings.currentNote, _settings.currentSubNote, -1);
     }
 
     function increaseCurrent() {
-      _allInstruments[_settings.currentInstrument].changeTimbreTone(_settings.currentOctave, _settings.currentNote, 1);
+      _allInstruments[_settings.currentInstrument].changeTimbreTone(_settings.currentOctave, _settings.currentNote, _settings.currentSubNote, 1);
     }
 
     function removeInstrument(name) {
