@@ -55,10 +55,11 @@ var timbreSingleton = (function() {
             // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Advanced_techniques
             noteOscillators.push(_ctx.createOscillator());
             noteAmps.push(_ctx.createGain());
-            noteOscillators[j].frequency.value = frequencies[i][j];;
-            noteAmps[j].gain.value = 0;
-            noteOscillators[j].connect(noteAmps[j]);
-            noteAmps[j].connect(_ctx.destination);
+            console.log(frequencies[i][j][k]);
+            noteOscillators[k].frequency.value = frequencies[i][j][k];
+            noteAmps[k].gain.value = 0;
+            noteOscillators[k].connect(noteAmps[k]);
+            noteAmps[k].connect(_ctx.destination);
           }
           octaveOscillators.push(noteOscillators);
           octaveAmps.push(noteAmps);
@@ -141,7 +142,7 @@ var instrumentSettingsSingleton = (function() {
     var _settings = {
       maxLevels: 100,
       maxNotes: 12,
-      maxSubNotes: 10,
+      maxSubNotes: 1,
       maxOctaves: 8, 
       currentInstrument: 0, 
       currentOctave: 4, 
@@ -265,11 +266,12 @@ var allInstrumentsSingleton = (function() {
       if(_frequencies.length > 0) {
         return _frequencies;
       }
-      
+
       var octave;
       var note;
       var freq;
-      var base = Math.pow(2, (1/120));
+      var base = Math.pow(2, (1/(_settings.maxNotes * _settings.maxSubNotes)));
+      var a4 = (4 * _settings.maxSubNotes * _settings.maxNotes) + (9 * _settings.maxSubNotes);
       var place = 0;
       for(var o = 0; o < _settings.maxOctaves; ++o) {
         octave = [];
@@ -277,14 +279,14 @@ var allInstrumentsSingleton = (function() {
           //A4 (440 hz) is 21st
           note = [];
           for(var s = 0; s < _settings.maxSubNotes; ++s) {
-            octave.push(440 * Math.pow(base, (place - 500)));
+            note.push(440 * Math.pow(base, (place - a4)));
             ++place
           }
           octave.push(note);
         }
         _frequencies.push(octave);
       }
-
+      console.log(_frequencies);
       return _frequencies;
     }
 
