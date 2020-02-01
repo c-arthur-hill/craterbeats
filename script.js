@@ -145,11 +145,11 @@ var settingsSingleton = (function() {
       maxOctaves: 8, 
       currentInstrument: 0, 
       currentOctave: 4, 
-      currentNote: 8,
+      currentNote: 0,
       currentSubNote: 0,
       fps: 60,
       stepSize: 3,
-      timbreSquareSideLength: 9,
+      timbreSquareSideLength: 20,
       currentHor: 4
     };
 
@@ -239,12 +239,7 @@ var instrument = (function() {
       for(var n = 0; n < _settings.maxNotes; ++n) {
         note = [];
         for(var s = 0; s < _settings.maxSubNotes; ++s) {
-          if (o == _settings.currentOctave && n == _settings.currentNote && s == _settings.currentSubNote) {
-            note.push(5);
-          } else {
-            // random 0 or 1
-            note.push(0);
-          }
+          note.push([50]);
         }
         octave.push(note);
       }
@@ -565,6 +560,12 @@ var colorSingleton = (function() {
     var _blacknessVector = ['20', '40', '60', '80'];
     var _chromaticVector = ['25', '50', '75'];
     var _colors = [];
+    var _scalarLimit = 2;
+    var _scalarMin = 12;
+    var _scalarGradations = 75;
+    var _scalarBlacknessIndex = 2;
+    var _scalarHueIndex = 3;
+    var _scalarColors = [];
 
     function getColors() {
       return _colors;
@@ -573,31 +574,53 @@ var colorSingleton = (function() {
     function getIndexColor(targetIndex, place=-1) {
       var placeIndex = place;
       if (place < 0) {
-	placeIndex = _colors[targetIndex].length + place;
+        placeIndex = _colors[targetIndex].length + place;
       }
       return _colors[targetIndex][placeIndex];
     }
 
+    function getScalarColors() {
+      return _scalarColors;
+    }
+
     function setColors() {
       for(var leftColor = 0; leftColor < _colorVector.length; ++leftColor) {
-	for(var hue = 0; hue < _hueMatrix.length; ++hue) {
-	  var subBeatColors = ['#bf0000'];
-	  var ncsColorString = '-' + _colorVector[leftColor] + _hueMatrix[hue];
-	  var completeString;
-	  for(var blackness = 0; blackness < _blacknessVector.length; ++blackness) {
-	    for(var chrom = 0; chrom < _chromaticVector.length; ++chrom) {
-	      completeString = _blacknessVector[blackness] + _chromaticVector[chrom] + ncsColorString;
-	      subBeatColors.push(w3color('ncs(' + completeString + ')').toHexString());
-	    }
-	  }
-	  _colors.push(subBeatColors);
-	}    
+        for(var hue = 0; hue < _hueMatrix.length; ++hue) {
+          var subBeatColors = ['#bf0000'];
+          var ncsColorString = '-' + _colorVector[leftColor] + _hueMatrix[hue];
+          var completeString;
+          for(var blackness = 0; blackness < _blacknessVector.length; ++blackness) {
+            for(var chrom = 0; chrom < _chromaticVector.length; ++chrom) {
+              completeString = _blacknessVector[blackness] + _chromaticVector[chrom] + ncsColorString;
+              subBeatColors.push(w3color('ncs(' + completeString + ')').toHexString());
+            }
+          }
+          _colors.push(subBeatColors);
+        }    
+      }
+      var ncsColorString;
+      // certain this is the bone-headed way of doing this
+      // 201 member vectors from dark blue to white to dark green
+      for(var col = 0; col < _scalarLimit; ++col) {
+        for(var gra = 25; gra < _scalarGradations; ++gra) {
+          if(col == 0) {
+            ncsColorString = _blacknessVector[_scalarBlacknessIndex] + gra.toString() + '-' + _colorVector[col] + _hueMatrix[_scalarHueIndex];
+            _scalarColors.push(w3color('ncs(' + ncsColorString + ')').toHexString());
+          } else {
+            if(gra == 25) {
+              _scalarColors.push('#fff');
+            }
+            ncsColorString = _blacknessVector[_scalarBlacknessIndex] + (100 - gra).toString() + '-' + _colorVector[col] + _hueMatrix[_scalarHueIndex];
+            _scalarColors.push(w3color('ncs(' + ncsColorString + ')').toHexString());
+          }
+        } 
       }
     }
 
     return {
       getColors: getColors,
       getIndexColor: getIndexColor,
+      getScalarColors: getScalarColors,
       setColors: setColors
     }
   }
@@ -658,6 +681,7 @@ var plotBarSingleton = (function() {
     var _settingsInstance = settingsSingleton.getInstance();
     var _settings = _settingsInstance.getSettings();
     var _allInstruments = allInstrumentsSingleton.getInstance();
+    var _scalarColors = colorSingleton.getInstance().getScalarColors();
 
     function getCanvasWidth() {
       return _canvas.width;
@@ -670,52 +694,77 @@ var plotBarSingleton = (function() {
       var squareSides = _settings.timbreSquareSideLength;
       var verticalSquares = _settings.maxOctaves * _settings.maxNotes * _settings.maxSubNotes;
       var horizontalSquares = width / squareSides;
-      var initialX = Math.floor(squareSides / 2);
-      var x = initialX;
-      var y = 0;
+      var halfSquareSides = Math.floor(squareSides / 2);
+      var x = 1;
+      var y = (halfSquareSides / 2);
       var currentInstrument = _allInstruments.getCurrentInstrument().getTimbre();
       var currentLoop = false;
       var currentVert = (_settings.currentOctave * _settings.maxNotes * _settings.maxSubNotes) + (_settings.currentNote * _settings.maxSubNotes);
-      _context.beginPath();
-      _context.strokeStyle = '#fff';
-      _context.lineWidth = squareSides-2;
 
       if(currentInstrument) {
-	      for(var vert = 0; vert < verticalSquares; ++vert) {
-          x = initialX;
-          y += squareSides;
+        _context.lineWidth = halfSquareSides - 2;
+        _context.beginPath();
+        for(var octaveLine = 0; octaveLine < _settings.currentOctave; ++octaveLine) {
           _context.moveTo(x, y);
-          for(var hor = 0; hor < horizontalSquares; ++hor) {
-            if(hor == _settings.currentHor && vert == currentVert) {
-              _context.closePath();
-              _context.stroke();
+          _context.strokeStyle = '#fff';
+          _context.lineTo(width-1, y);
+          y += halfSquareSides; 
+        }
+        _context.stroke();
+
+        y += 4;
+        _context.lineWidth = squareSides - 2;
+        for(var note = 0; note < _settings.maxNotes; ++note) {
+          for(var subNote = 0; subNote < _settings.maxSubNotes; ++subNote) {
+            x = halfSquareSides;
+            y += halfSquareSides; 
+            for(var hor = 0; hor < horizontalSquares; ++hor) {
               _context.beginPath();
               _context.moveTo(x, y);
-              _context.strokeStyle = '#bf0000';
+              if(note == _settings.currentNote && subNote == _settings.currentSubNote && hor == _settings.currentHor) {
+                _context.strokeStyle = '#bf0000';
+              } else {
+                // replace 0 with horr
+                _context.strokeStyle = _scalarColors[currentInstrument[_settings.currentOctave][note][subNote][0]];
+              }
+
               _context.lineTo(x, y-squareSides+2);
-              _context.closePath();
               _context.stroke();
-              _context.beginPath();
-              _context.strokeStyle = '#fff';
-            } else {
-              _context.lineTo(x, y-squareSides+2);
+              x += squareSides;
             }
-            x += squareSides;
-            _context.moveTo(x, y);
+            y += halfSquareSides;
           }
         }
       } else {
 	      alert("No Instrument");
       }
+
+      x = 1;
+      // have to correct for last y += halfSquareSides in loop above
+      y -= (halfSquareSides / 2);
+      y += 1;
+      _context.lineWidth = halfSquareSides - 2;
+      _context.beginPath();
+      for(var octaveLine = _settings.currentOctave + 1; octaveLine < _settings.maxOctaves; ++octaveLine) {
+        _context.moveTo(x, y);
+        _context.strokeStyle = '#fff';
+        _context.lineTo(width-1, y); 
+        y += halfSquareSides;
+      }
+
       _context.stroke();
       requestAnimationFrame(plotBar);
     }
 
     function setCanvasSize() {
       var windowWidth = document.body.clientWidth;
-      windowWidth = windowWidth - (windowWidth % _settings.timbreSquareSideLength);
-      _canvas.setAttribute('width', windowWidth);
-      var canvasHeight = _settings.timbreSquareSideLength * _settings.maxOctaves * _settings.maxNotes * _settings.maxSubNotes;
+      var canvasWidth = windowWidth - (windowWidth % _settings.timbreSquareSideLength);
+      _canvas.setAttribute('width', canvasWidth);
+      var marginWidth = Math.floor((windowWidth - canvasWidth) / 2);
+      _canvas.style.marginLeft = marginWidth + 'px';
+      _canvas.style.marginRight = marginWidth + 'px';
+      var canvasHeight = _settings.timbreSquareSideLength * _settings.maxNotes * _settings.maxSubNotes;
+      canvasHeight += ((_settings.timbreSquareSideLength / 2) * (_settings.maxOctaves+1));
       _canvas.setAttribute('height', canvasHeight);
     }
   
