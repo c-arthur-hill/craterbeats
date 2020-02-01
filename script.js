@@ -55,7 +55,6 @@ var timbreSingleton = (function() {
             // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Advanced_techniques
             noteOscillators.push(_ctx.createOscillator());
             noteAmps.push(_ctx.createGain());
-            console.log(frequencies[i][j][k]);
             noteOscillators[k].frequency.value = frequencies[i][j][k];
             noteAmps[k].gain.value = 0;
             noteOscillators[k].connect(noteAmps[k]);
@@ -140,7 +139,7 @@ var instrumentSettingsSingleton = (function() {
 
   function createInstance() {
     var _settings = {
-      maxLevels: 100,
+      maxLevels: 10,
       maxNotes: 12,
       maxSubNotes: 1,
       maxOctaves: 8, 
@@ -220,11 +219,10 @@ var instrument = (function() {
     return this;      
   }
 
-  function changeTimbreTone(octave, note, value) {
-    if (value < _settings.maxLevels) {
-      _timbre[octave][note] += value;
-    } else {
-      alert("Error: Timbre value attempted to set outside _levels.");
+  function changeTimbreTone(octave, note, subNote, value) {
+    if (_timbre[octave][note][subNote] + value <= _settings.maxLevels && _timbre[octave][note][subNote] + value >= 0) {
+      _timbre[octave][note][subNote] += value;
+      console.log(_timbre[octave][note][subNote]);
     }
   }
 
@@ -286,7 +284,6 @@ var allInstrumentsSingleton = (function() {
         }
         _frequencies.push(octave);
       }
-      console.log(_frequencies);
       return _frequencies;
     }
 
@@ -693,44 +690,44 @@ var plotBarSingleton = (function() {
       _context.lineWidth = barWidth-2;
 
       if(currentInstrument) {
-	for(var oct = 0; oct < currentInstrument.length; ++oct) {
-	  x = initialX;
-	  if(_instrumentSettings.currentOctave == oct) {
-	    y += 200;
-	    currentLoop = true;
-	  } else {
-	    y += 20;
-	  }
-	  _context.moveTo(x, y);
-	  for(var note = 0; note < currentInstrument[oct].length; ++note) {
-	      if(currentLoop) {
-		if(_instrumentSettings.currentNote == note) {
-		  _context.closePath();
-		  _context.stroke();
-		  _context.beginPath();
-		  _context.moveTo(x, y);
-		  _context.strokeStyle = '#bf0000';
-		}
-		_context.lineTo(x, y-(5+(20 * currentInstrument[oct][note])));
-		if(_instrumentSettings.currentNote == note) {
-		  _context.closePath();
-		  _context.stroke();
-		  _context.beginPath();
-		  _context.strokeStyle = '#fff';
-		}
-	      } else {
-		_context.lineTo(x, y-(2 * currentInstrument[oct][note]));
-	      }
-	      x += barWidth;
-	      _context.moveTo(x, y);
-	    }
+	      for(var oct = 0; oct < currentInstrument.length; ++oct) {
+          x = initialX;
+          if(_instrumentSettings.currentOctave == oct) {
+            y += 200;
+            currentLoop = true;
+          } else {
+            y += 20;
+          }
+          _context.moveTo(x, y);
+          for(var note = 0; note < currentInstrument[oct].length; ++note) {
+            if(currentLoop) {
+              if(_instrumentSettings.currentNote == note) {
+                _context.closePath();
+                _context.stroke();
+                _context.beginPath();
+                _context.moveTo(x, y);
+                _context.strokeStyle = '#bf0000';
+              }
+              _context.lineTo(x, y-(5+(20 * currentInstrument[oct][note])));
+              if(_instrumentSettings.currentNote == note) {
+                _context.closePath();
+                _context.stroke();
+                _context.beginPath();
+                _context.strokeStyle = '#fff';
+              }
+            } else {
+              _context.lineTo(x, y-(2 * currentInstrument[oct][note]));
+            }
+            x += barWidth;
+            _context.moveTo(x, y);
+          }
 
-	    if(currentLoop) {
-	      currentLoop = false;
-	    }
-	  }
+          if(currentLoop) {
+            currentLoop = false;
+          }
+        }
       } else {
-	alert("No Instrument");
+	      alert("No Instrument");
       }
       _context.stroke();
       requestAnimationFrame(plotBar);
