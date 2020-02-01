@@ -148,12 +148,17 @@ var settingsSingleton = (function() {
       currentNote: 8,
       currentSubNote: 0,
       fps: 60,
-      stepSize: 3
+      stepSize: 3,
+      timbreSquareSideLength: 9,
+      currentHor: 4
     };
 
+    function getCurrentHor() {
+      return _settings.currentHor;
+    }
 
     function getFramesPerSecond() {
-      return _fps;
+      return _settings.fps;
     }
 
     function getSettings() {
@@ -161,15 +166,19 @@ var settingsSingleton = (function() {
     }
   
     function getStepSize() {
-      return _stepSize;
+      return _settings.stepSize;
+    }
+
+    function setCurrentHor(x) {
+      _settings.currentHor = x;
     }
   
     function setFramesPerSecond(x) {
-      _fps = x;
+      _settings.fps = x;
     }
 
     function setStepSize(x) {
-      _stepSize = x;
+      _settings.stepSize = x;
     }
 
     function setIndex(i, o=-1, n=-1, s=-1) {
@@ -187,9 +196,11 @@ var settingsSingleton = (function() {
     }
 
     return {
+      getCurrentHor: getCurrentHor,
       getFramesPerSecond: getFramesPerSecond,
       getSettings: getSettings,
       getStepSize: getStepSize,
+      setCurrentHor: setCurrentHor,
       setFramesPerSecond: setFramesPerSecond,	
       setIndex: setIndex,
       setStepSize: setStepSize
@@ -645,6 +656,7 @@ var plotBarSingleton = (function() {
     var _canvas = document.getElementById("canvas"); 
     var _context = canvas.getContext("2d");
     var _settingsInstance = settingsSingleton.getInstance();
+    var _settings = _settingsInstance.getSettings();
     var _allInstruments = allInstrumentsSingleton.getInstance();
 
     function getCanvasWidth() {
@@ -653,54 +665,43 @@ var plotBarSingleton = (function() {
 
     function plotBar() {
       _context.clearRect(0, 0, _context.canvas.width, _context.canvas.height);
-
       var width = _context.canvas.width;
       var height = _context.canvas.height;
-      var barWidth = width / 12;
-      var initialX = Math.floor(barWidth / 2);
+      var squareSides = _settings.timbreSquareSideLength;
+      var verticalSquares = _settings.maxOctaves * _settings.maxNotes * _settings.maxSubNotes;
+      var horizontalSquares = width / squareSides;
+      var initialX = Math.floor(squareSides / 2);
       var x = initialX;
       var y = 0;
       var currentInstrument = _allInstruments.getCurrentInstrument().getTimbre();
       var currentLoop = false;
+      var currentVert = (_settings.currentOctave * _settings.maxNotes * _settings.maxSubNotes) + (_settings.currentNote * _settings.maxSubNotes);
       _context.beginPath();
       _context.strokeStyle = '#fff';
-      _context.lineWidth = barWidth-2;
+      _context.lineWidth = squareSides-2;
 
       if(currentInstrument) {
-	      for(var oct = 0; oct < currentInstrument.length; ++oct) {
+	      for(var vert = 0; vert < verticalSquares; ++vert) {
           x = initialX;
-          if(_settingsInstance.currentOctave == oct) {
-            y += 200;
-            currentLoop = true;
-          } else {
-            y += 20;
-          }
+          y += squareSides;
           _context.moveTo(x, y);
-          for(var note = 0; note < currentInstrument[oct].length; ++note) {
-            if(currentLoop) {
-              if(_settingsInstance.currentNote == note) {
-                _context.closePath();
-                _context.stroke();
-                _context.beginPath();
-                _context.moveTo(x, y);
-                _context.strokeStyle = '#bf0000';
-              }
-              _context.lineTo(x, y-(5+(20 * currentInstrument[oct][note])));
-              if(_settingsInstance.currentNote == note) {
-                _context.closePath();
-                _context.stroke();
-                _context.beginPath();
-                _context.strokeStyle = '#fff';
-              }
+          for(var hor = 0; hor < horizontalSquares; ++hor) {
+            if(hor == _settings.currentHor && vert == currentVert) {
+              _context.closePath();
+              _context.stroke();
+              _context.beginPath();
+              _context.moveTo(x, y);
+              _context.strokeStyle = '#bf0000';
+              _context.lineTo(x, y-squareSides+2);
+              _context.closePath();
+              _context.stroke();
+              _context.beginPath();
+              _context.strokeStyle = '#fff';
             } else {
-              _context.lineTo(x, y-(2 * currentInstrument[oct][note]));
+              _context.lineTo(x, y-squareSides+2);
             }
-            x += barWidth;
+            x += squareSides;
             _context.moveTo(x, y);
-          }
-
-          if(currentLoop) {
-            currentLoop = false;
           }
         }
       } else {
@@ -710,23 +711,18 @@ var plotBarSingleton = (function() {
       requestAnimationFrame(plotBar);
     }
 
-    function setCanvasWidth() {
+    function setCanvasSize() {
       var windowWidth = document.body.clientWidth;
-      var notesNum = _settingsInstance.maxNotes;
-      var columnWidth = Math.floor(windowWidth / (notesNum+1));
-      // adding half remainder to each margin
-      var marginWidth = Math.floor(columnWidth/2 + ((windowWidth % notesNum) / 2));
-      var marginString = marginWidth.toString() + 'px';
-      var canvasWidth = columnWidth * notesNum;
-      _canvas.setAttribute('width', canvasWidth);
-      _canvas.style.marginLeft = marginString;
-      _canvas.style.marginRight = marginString;
+      windowWidth = windowWidth - (windowWidth % _settings.timbreSquareSideLength);
+      _canvas.setAttribute('width', windowWidth);
+      var canvasHeight = _settings.timbreSquareSideLength * _settings.maxOctaves * _settings.maxNotes * _settings.maxSubNotes;
+      _canvas.setAttribute('height', canvasHeight);
     }
   
     return {
       getCanvasWidth: getCanvasWidth,
       plotBar: plotBar,
-      setCanvasWidth: setCanvasWidth
+      setCanvasSize: setCanvasSize
     }
   }
 
@@ -1014,7 +1010,7 @@ var buttonFunctions = (function() {
   }
 
   function bar() {
-    _plotBar.setCanvasWidth();
+    _plotBar.setCanvasSize();
     _plotBar.plotBar();
   }
 
@@ -1041,9 +1037,15 @@ var buttonFunctions = (function() {
     _timbre.updateTone();
   }
 
-  function downOctave() {
+  function downTimbre() {
     var prev = _settingsInstance.getSettings();
-    _settingsInstance.setIndex(prev.currentInstrument, prev.currentOctave-1, prev.currentNote);
+    if (prev.currentNote == prev.maxNote) {
+      prev.currentNote = 0;
+      prev.currentOctave += 1;
+    } else {
+      prev.currentNote += 1;
+    }
+    _settingsInstance.setIndex(prev.currentInstrument, prev.currentOctave, prev.currentNote);
   }
 
   function increaseTone() {
@@ -1055,15 +1057,9 @@ var buttonFunctions = (function() {
     bar();
   }
   
-  function leftTone() {
+  function leftTimbre() {
     var prev = _settingsInstance.getSettings();
-    if(prev.currentNote == 0) {
-      prev.currentOctave -= 1;
-      prev.currentNote = 9;
-    } else {
-      prev.currentNote -= 1;
-    }
-    _settingsInstance.setIndex(prev.currentInstrument, prev.currentOctave, prev.currentNote);
+    _settingsInstance.setCurrentHor(prev.currentHor - 1);
   }
 
   function pulse() {
@@ -1078,15 +1074,9 @@ var buttonFunctions = (function() {
     }
   }
 
-  function rightTone() {
+  function rightTimbre() {
     var prev = _settingsInstance.getSettings();
-    if(prev.currentNote == 11) {
-      prev.currentOctave += 1;
-      prev.currentNote = 0;
-    } else {
-      prev.currentNote += 1;
-    }
-    _settingsInstance.setIndex(prev.currentInstrument, prev.currentOctave, prev.currentNote);
+    _settingsInstance.setCurrentHor(prev.currentHor + 1);
   }
 
   function sine() {
@@ -1098,9 +1088,15 @@ var buttonFunctions = (function() {
     _timbre.toggle();
   }
 
-  function upOctave() {
+  function upTimbre() {
     var prev = _settingsInstance.getSettings();
-    _settingsInstance.setIndex(prev.currentInstrument, prev.currentOctave+1, prev.currentNote);
+    if (prev.currentNote == prev.maxNote) {
+      prev.currentNote = 0;
+      prev.currentOctave -= 1;
+    } else {
+      prev.currentNote -= 1;
+    }
+    _settingsInstance.setIndex(prev.currentInstrument, prev.currentOctave, prev.currentNote);
   }
 
   return {
@@ -1108,16 +1104,16 @@ var buttonFunctions = (function() {
     bar: bar,
     beat: beat,
     decreaseTone: decreaseTone,
-    downOctave: downOctave,
+    downTimbre: downTimbre,
     increaseTone: increaseTone,
-    leftTone: leftTone,
+    leftTimbre: leftTimbre,
     newBeat: newBeat,
     init: init,
     pulse: pulse,
-    rightTone: rightTone,
+    rightTimbre: rightTimbre,
     sine: sine,
     toggleTimbre: toggleTimbre,
-    upOctave: upOctave
+    upTimbre: upTimbre
   }
 })()
 
@@ -1136,16 +1132,16 @@ document.onkeydown = function(e) {
   } else {
     switch(e.which || e.keyCode) {
       case 72: // left
-	buttonFunctions.leftTone();
+	buttonFunctions.leftTimbre();
 	break;
       case 75: //up
-	buttonFunctions.downOctave(); 
+	buttonFunctions.upTimbre(); 
 	break;
       case 76: //right
-	buttonFunctions.rightTone();
+	buttonFunctions.rightTimbre();
 	break;
       case 74: //down
-	buttonFunctions.upOctave();
+	buttonFunctions.downTimbre();
 	break;
       case 79:
 	buttonFunctions.increaseTone();
