@@ -150,7 +150,7 @@ var settingsSingleton = (function() {
       stepSize: 3,
       timbreSquareSideLength: 20,
       currentHor: 1,
-      timbreSquares: 150,
+      timbreSquares: 75,
     };
 
     function getCurrentHor() {
