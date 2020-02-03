@@ -150,7 +150,7 @@ var settingsSingleton = (function() {
       stepSize: 3,
       timbreSquareSideLength: 20,
       currentHor: 1,
-      timbreSquares: 75,
+      timbreSquares: 150,
     };
 
     function getCurrentHor() {
@@ -564,11 +564,9 @@ var colorSingleton = (function() {
     var _blacknessVector = ['20', '40', '60', '80'];
     var _chromaticVector = ['25', '50', '75'];
     var _colors = [];
-    var _scalarLimit = 2;
-    var _scalarMin = 12;
-    var _scalarGradations = 75;
-    var _scalarBlacknessIndex = 2;
-    var _scalarHueIndex = 3;
+    var _scalarLimit = 1;
+    var _scalarMin = 25;
+    var _scalarMax = 75;
     var _scalarColors = [];
 
     function getColors() {
@@ -605,20 +603,21 @@ var colorSingleton = (function() {
       var ncsColorString;
       // certain this is the bone-headed way of doing this
       // 201 member vectors from dark blue to white to dark green
-      for(var col = 0; col < _scalarLimit; ++col) {
-        for(var gra = 25; gra < _scalarGradations; ++gra) {
+      for(var col = _scalarLimit; col >= 0; --col) {
+        for(var gra = _scalarMin; gra < _scalarMax; ++gra) {
           if(col == 0) {
-            ncsColorString = _blacknessVector[_scalarBlacknessIndex] + gra.toString() + '-' + _colorVector[col] + _hueMatrix[_scalarHueIndex];
-            _scalarColors.push(w3color('ncs(' + ncsColorString + ')').toHexString());
-          } else {
-            if(gra == 25) {
+            if(gra == _scalarMin) {
               _scalarColors.push('#fff');
             }
-            ncsColorString = _blacknessVector[_scalarBlacknessIndex] + (100 - gra).toString() + '-' + _colorVector[col] + _hueMatrix[_scalarHueIndex];
+            ncsColorString = gra.toString() + '80-' + _colorVector[col];
+            _scalarColors.push(w3color('ncs(' + ncsColorString + ')').toHexString());
+          } else {
+            ncsColorString = (100-gra).toString() + '80-' + _colorVector[col];
             _scalarColors.push(w3color('ncs(' + ncsColorString + ')').toHexString());
           }
         } 
       }
+      console.log(_scalarColors);
     }
 
     return {
