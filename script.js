@@ -111,7 +111,6 @@ var timbreSingleton = (function() {
       // update this to separate method that keeps const vol
       var correction = instrument.getCorrection();
       var timbre = instrument.getTimbre();
-      _amps[_settings.currentOctave][_settings.currentNote][_settings.currentSubNote].gain.value = (timbre[_settings.currentOctave][_settings.currentNote][_settings.currentSubNote] / correction); 
     }
 
     return {
@@ -139,7 +138,7 @@ var settingsSingleton = (function() {
 
   function createInstance() {
     var _settings = {
-      maxLevels: 10,
+      maxLevels: 100,
       maxNotes: 12,
       maxSubNotes: 1,
       maxOctaves: 8, 
@@ -150,7 +149,8 @@ var settingsSingleton = (function() {
       fps: 60,
       stepSize: 3,
       timbreSquareSideLength: 20,
-      currentHor: 1
+      currentHor: 1,
+      timbreSquares: 150,
     };
 
     function getCurrentHor() {
@@ -234,12 +234,17 @@ var instrument = (function() {
   function init() {
     var octave;
     var note;
+    var subNote;
     for(var o = 0; o < _settings.maxOctaves; ++o) {
       octave = [];
       for(var n = 0; n < _settings.maxNotes; ++n) {
         note = [];
         for(var s = 0; s < _settings.maxSubNotes; ++s) {
-          note.push([50]);
+          subNote = [];
+          for(var q = 0; q < _settings.timbreSquares; ++q) {
+            subNote.push(50);
+          }
+          note.push(subNote);
         }
         octave.push(note);
       }
@@ -248,10 +253,9 @@ var instrument = (function() {
     return this;      
   }
 
-  function changeTimbreTone(octave, note, subNote, value) {
-    if (_timbre[octave][note][subNote] + value <= _settings.maxLevels && _timbre[octave][note][subNote] + value >= 0) {
-      _timbre[octave][note][subNote] += value;
-      console.log(_timbre[octave][note][subNote]);
+  function changeTimbreTone(octave, note, subNote, hor, value) {
+    if (_timbre[octave][note][subNote][hor] + value <= _settings.maxLevels && _timbre[octave][note][subNote][hor] + value >= 0) {
+      _timbre[octave][note][subNote][hor] += value;
     }
   }
 
@@ -317,11 +321,11 @@ var allInstrumentsSingleton = (function() {
     }
 
     function decreaseCurrent() {
-      _allInstruments[_settings.currentInstrument].changeTimbreTone(_settings.currentOctave, _settings.currentNote, _settings.currentSubNote, -1);
+      _allInstruments[_settings.currentInstrument].changeTimbreTone(_settings.currentOctave, _settings.currentNote, _settings.currentSubNote, _settings.currentHor, -1);
     }
 
     function increaseCurrent() {
-      _allInstruments[_settings.currentInstrument].changeTimbreTone(_settings.currentOctave, _settings.currentNote, _settings.currentSubNote, 1);
+      _allInstruments[_settings.currentInstrument].changeTimbreTone(_settings.currentOctave, _settings.currentNote, _settings.currentSubNote, _settings.currentHor, 1);
     }
 
     function removeInstrument(name) {
@@ -721,11 +725,11 @@ var plotBarSingleton = (function() {
             for(var hor = 0; hor < horizontalSquares; ++hor) {
               _context.beginPath();
               _context.moveTo(x, y);
-              if(note == _settings.currentNote && subNote == _settings.currentSubNote && hor == _settings.currentHor) {
+              if(note == _settings.currentNote && subNote == _settings.currentSubNote && hor == _settings.currentHor && currentInstrument[_settings.currentOctave][note][subNote][hor] == 50) {
                 _context.strokeStyle = '#bf0000';
               } else {
                 // replace 0 with horr
-                _context.strokeStyle = _scalarColors[currentInstrument[_settings.currentOctave][note][subNote][0]];
+                _context.strokeStyle = _scalarColors[currentInstrument[_settings.currentOctave][note][subNote][hor]];
               }
 
               _context.lineTo(x, y-squareSides+2);
@@ -812,7 +816,7 @@ var plotSineSingleton = (function() {
 
       _animationPlace = _animationPlace - _settingsInstance.getStepSize();
       if (_animationPlace <= 0) {
-	_animationPlace = _context.canvas.width;
+        _animationPlace = _context.canvas.width;
       }
       setAnimationPlace(_animationPlace);
 
@@ -828,9 +832,9 @@ var plotSineSingleton = (function() {
       var amplitude = 40;
       var frequency = 100;
       while (x < width) {
-	y = height/2 + amplitude * Math.sin((x-_animationPlace)/frequency);
-	_context.lineTo(x, y);
-	x = x + 1;
+        y = height/2 + amplitude * Math.sin((x-_animationPlace)/frequency);
+        _context.lineTo(x, y);
+        x = x + 1;
       }
       _context.stroke();
       _context.closePath();
