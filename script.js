@@ -145,12 +145,12 @@ var settingsSingleton = (function() {
       maxOctaves: 8, 
       currentInstrument: 0, 
       currentOctave: 4, 
-      currentNote: 0,
+      currentNote: 1,
       currentSubNote: 0,
       fps: 60,
       stepSize: 3,
       timbreSquareSideLength: 20,
-      currentHor: 4
+      currentHor: 1
     };
 
     function getCurrentHor() {
