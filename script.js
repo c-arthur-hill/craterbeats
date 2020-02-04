@@ -1091,7 +1091,7 @@ var buttonFunctions = (function() {
 
   function downTimbre() {
     var prev = _settingsInstance.getSettings();
-    if (prev.currentNote == prev.maxNote) {
+    if ((prev.currentNote + 1) == prev.maxNotes) {
       prev.currentNote = 0;
       prev.currentOctave += 1;
     } else {
@@ -1142,8 +1142,8 @@ var buttonFunctions = (function() {
 
   function upTimbre() {
     var prev = _settingsInstance.getSettings();
-    if (prev.currentNote == prev.maxNote) {
-      prev.currentNote = 0;
+    if (prev.currentNote == 0) {
+      prev.currentNote = (prev.maxNotes - 1);
       prev.currentOctave -= 1;
     } else {
       prev.currentNote -= 1;
