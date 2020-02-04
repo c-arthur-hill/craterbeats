@@ -170,7 +170,9 @@ var settingsSingleton = (function() {
     }
 
     function setCurrentHor(x) {
-      _settings.currentHor = x;
+      if (x >= 0 && x < _settings.timbreSquares) {
+        _settings.currentHor = x;
+      }
     }
   
     function setFramesPerSecond(x) {
@@ -184,13 +186,13 @@ var settingsSingleton = (function() {
     function setIndex(i, o=-1, n=-1, s=-1) {
       _settings.currentInstrument = i;
 
-      if(o > -1) {
+      if(o > -1 && o < _settings.maxOctaves) {
 	      _settings.currentOctave = o;
       }
-      if(n > -1) {
+      if(n > -1 && n < _settings.maxNotes) {
         _settings.currentNote = n;
       }
-      if(s > -1) {
+      if(s > -1 && s < _settings.maxSubNotes) {
         _settings.currentSubNote = s;
       }
     }
@@ -1091,13 +1093,18 @@ var buttonFunctions = (function() {
 
   function downTimbre() {
     var prev = _settingsInstance.getSettings();
+    var newCurrentNote = prev.currentNote;
+    var newCurrentOctave = prev.currentOctave;
+    var newCurrentInstrument = prev.currentInstrument;
     if ((prev.currentNote + 1) == prev.maxNotes) {
-      prev.currentNote = 0;
-      prev.currentOctave += 1;
+      if(prev.currentOctave < (prev.maxOctaves - 1)) {
+        newCurrentNote = 0;
+        newCurrentOctave = prev.currentOctave + 1;
+      }
     } else {
-      prev.currentNote += 1;
+      newCurrentNote = prev.currentNote + 1;
     }
-    _settingsInstance.setIndex(prev.currentInstrument, prev.currentOctave, prev.currentNote);
+    _settingsInstance.setIndex(newCurrentInstrument, newCurrentOctave, newCurrentNote);
   }
 
   function increaseTone() {
@@ -1142,13 +1149,18 @@ var buttonFunctions = (function() {
 
   function upTimbre() {
     var prev = _settingsInstance.getSettings();
+    var newCurrentNote = prev.currentNote;
+    var newCurrentOctave = prev.currentOctave;
+    var newCurrentInstrument = prev.currentInstrument;
     if (prev.currentNote == 0) {
-      prev.currentNote = (prev.maxNotes - 1);
-      prev.currentOctave -= 1;
+      if (prev.currentOctave > 0) {
+        newCurrentNote = (prev.maxNotes - 1);
+        newCurrentOctave = prev.currentOctave - 1;
+      }
     } else {
-      prev.currentNote -= 1;
+      newCurrentNote = (prev.currentNote - 1);
     }
-    _settingsInstance.setIndex(prev.currentInstrument, prev.currentOctave, prev.currentNote);
+    _settingsInstance.setIndex(newCurrentInstrument, newCurrentOctave, newCurrentNote);
   }
 
   return {
