@@ -146,24 +146,28 @@ var settingsSingleton = (function() {
       currentOctave: 4, 
       currentNote: 1,
       currentSubNote: 0,
+      currentHor: 1,
       fps: 60,
       stepSize: 3,
       timbreSquareSideLength: 20,
-      currentHor: 1,
-      horOffset: 0,
+      horLeft: 0,
+      horRight: 0,
       timbreSquares: 75,
-      horMargin: 2,
-      horSquares: 75,
+      horMargin: 1,
     };
 
     function getCurrentHor() {
       return _settings.currentHor;
     }
 
-    function getHorOffset() {
-      return _settings.horOffset;
+    function getHorLeft() {
+      return _settings.horLeft;
     }
-    
+
+    function getHorRight() {
+      return _settings.horRight;
+    }
+
     function getHorMargin() {
       return _settings.horMargin;
     }
@@ -189,7 +193,7 @@ var settingsSingleton = (function() {
     }
 
     function setCurrentHor(x) {
-      if (x >= 0 && (x + _settings.horOffset) < _settings.timbreSquares) {
+      if (x >= 0 && x < _settings.timbreSquares) {
         _settings.currentHor = x;
       }
     }
@@ -198,9 +202,15 @@ var settingsSingleton = (function() {
       _settings.fps = x;
     }
 
-    function setHorOffset(x) {
-      if (x >= 0 && (x + _settings.currentHor) < _settings.timbreSquares) {
-        _settings.horOffset = x;
+    function setHorLeft(x) {
+      if (x >= 0) {
+        _settings.horLeft = x;
+      }
+    }
+
+    function setHorRight(x) {
+      if (x < _settings.timbreSquares) {
+        _settings.horRight = x;
       }
     }
 
@@ -222,7 +232,7 @@ var settingsSingleton = (function() {
       }
     }
 
-    function initHorSquares() {
+    function initHorRight() {
       // called on init
       var windowWidth = document.body.clientWidth;
       var defaultCanvasWidth = _settings.timbreSquareSideLength * _settings.timbreSquares;
@@ -230,32 +240,33 @@ var settingsSingleton = (function() {
       if (canvasWidth > defaultCanvasWidth) {
         canvasWidth = defaultCanvasWidth;
       }
-      _settings.horSquares = canvasWidth / _settings.timbreSquareSideLength;
+      _settings.horRight = (canvasWidth / _settings.timbreSquareSideLength) - 1;
     }
 
 
     return {
       getCurrentHor: getCurrentHor,
-      getHorOffset: getHorOffset,
+      getHorLeft: getHorLeft,
+      getHorRight: getHorRight,
       getHorMargin: getHorMargin,
-      getHorSquares: getHorSquares,
       getFramesPerSecond: getFramesPerSecond,
       getSettings: getSettings,
       getStepSize: getStepSize,
       getTimbreSquares: getTimbreSquares,
       setCurrentHor: setCurrentHor,
-      setHorOffset: setHorOffset,
+      setHorLeft: setHorLeft,
+      setHorRight: setHorRight,
       setFramesPerSecond: setFramesPerSecond,	
       setIndex: setIndex,
       setStepSize: setStepSize,
-      initHorSquares: initHorSquares
+      initHorRight: initHorRight
     }
   }
 
   function getInstance() {
     if(!_instance) {
       _instance = createInstance();
-      _instance.initHorSquares();
+      _instance.initHorRight();
     }
     return _instance;
   }
@@ -367,11 +378,11 @@ var allInstrumentsSingleton = (function() {
     }
 
     function decreaseCurrent() {
-      _allInstruments[_settings.currentInstrument].changeTimbreTone(_settings.currentOctave, _settings.currentNote, _settings.currentSubNote, _settings.currentHor + _settings.horOffset, -1);
+      _allInstruments[_settings.currentInstrument].changeTimbreTone(_settings.currentOctave, _settings.currentNote, _settings.currentSubNote, _settings.currentHor, -1);
     }
 
     function increaseCurrent() {
-      _allInstruments[_settings.currentInstrument].changeTimbreTone(_settings.currentOctave, _settings.currentNote, _settings.currentSubNote, _settings.currentHor + _settings.horOffset, 1);
+      _allInstruments[_settings.currentInstrument].changeTimbreTone(_settings.currentOctave, _settings.currentNote, _settings.currentSubNote, _settings.currentHor, 1);
     }
 
     function removeInstrument(name) {
@@ -765,10 +776,10 @@ var plotBarSingleton = (function() {
           for(var subNote = 0; subNote < _settings.maxSubNotes; ++subNote) {
             x = halfSquareSides;
             y += halfSquareSides; 
-            for(var hor = _settings.horOffset; hor < _settings.timbreSquares; ++hor) {
+            for(var hor = _settings.horLeft; hor <= _settings.horRight; ++hor) {
               _context.beginPath();
               _context.moveTo(x, y);
-              if(note == _settings.currentNote && subNote == _settings.currentSubNote && hor == (_settings.currentHor + _settings.horOffset) && currentInstrument[_settings.currentOctave][note][subNote][hor] == 50) {
+              if(note == _settings.currentNote && subNote == _settings.currentSubNote && hor == (_settings.currentHor) && currentInstrument[_settings.currentOctave][note][subNote][hor] == 50) {
                 _context.strokeStyle = '#bf0000';
               } else {
                 // replace 0 with horr
@@ -805,7 +816,7 @@ var plotBarSingleton = (function() {
 
     function setCanvasSize() {
       var windowWidth = document.body.clientWidth;
-      var canvasWidth = _settings.horSquares * _settings.timbreSquareSideLength;
+      var canvasWidth = (_settings.horRight + 1) * _settings.timbreSquareSideLength;
       var marginWidth = Math.floor((windowWidth - canvasWidth) / 2);
       var canvasHeight = _settings.timbreSquareSideLength * _settings.maxNotes * _settings.maxSubNotes;
       _canvas.setAttribute('width', canvasWidth);
@@ -1159,14 +1170,12 @@ var buttonFunctions = (function() {
   }
   
   function leftTimbre() {
-    var horLocation = _settingsInstance.getCurrentHor() + _settingsInstance.getHorOffset();
-    if (horLocation > (_settingsInstance.getHorSquares() - _settingsInstance.getHorMargin()) && horLocation + _settingsInstance.getHorMargin() <= _settingsInstance.getTimbreSquares()) {
-      _settingsInstance.setHorOffset(_settingsInstance.getHorOffset() - 1);
-    } else {
-      _settingsInstance.setCurrentHor(_settingsInstance.getCurrentHor() - 1);
+    var horLocation = _settingsInstance.getCurrentHor();
+    if (horLocation < (_settingsInstance.getHorLeft() + _settingsInstance.getHorMargin()) && horLocation - _settingsInstance.getHorMargin() >= 0) {
+      _settingsInstance.setHorLeft(_settingsInstance.getHorLeft() - 1);
+      _settingsInstance.setHorRight(_settingsInstance.getHorRight() - 1);
     }
-    console.log(_settingsInstance.getCurrentHor());
-    console.log(_settingsInstance.getHorOffset());
+    _settingsInstance.setCurrentHor(_settingsInstance.getCurrentHor() - 1);
   }
 
   function pulse() {
@@ -1182,14 +1191,16 @@ var buttonFunctions = (function() {
   }
 
   function rightTimbre() {
-    var horLocation = _settingsInstance.getCurrentHor() + _settingsInstance.getHorOffset();
-    if (horLocation >= (_settingsInstance.getHorSquares() - _settingsInstance.getHorMargin()) && horLocation < (_settingsInstance.getTimbreSquares() - _settingsInstance.getHorMargin())) {
-      _settingsInstance.setHorOffset(_settingsInstance.getHorOffset() + 1);
-    } else {
-      _settingsInstance.setCurrentHor(_settingsInstance.getCurrentHor() + 1);
+    var horLocation = _settingsInstance.getCurrentHor() + 1;
+    console.log(horLocation);
+    console.log(_settingsInstance.getHorRight());
+    console.log(_settingsInstance.getHorRight() - _settingsInstance.getHorMargin());
+    console.log("----------");
+    if (horLocation > (_settingsInstance.getHorRight() - _settingsInstance.getHorMargin()) && horLocation < (_settingsInstance.getTimbreSquares() - _settingsInstance.getHorMargin())) {
+      _settingsInstance.setHorRight(_settingsInstance.getHorRight() + 1);
+      _settingsInstance.setHorLeft(_settingsInstance.getHorLeft() + 1);
     }
-    console.log(_settingsInstance.getCurrentHor());
-    console.log(_settingsInstance.getHorOffset());
+    _settingsInstance.setCurrentHor(_settingsInstance.getCurrentHor() + 1);
   }
 
   function sine() {
