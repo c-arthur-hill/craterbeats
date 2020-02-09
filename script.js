@@ -133,6 +133,7 @@ var timbreSingleton = (function() {
   }
 })();
 
+
 var settingsSingleton = (function() {
   var _instance = null;
 
@@ -412,6 +413,58 @@ var allInstrumentsSingleton = (function() {
   return {
     getInstance: getInstance,
   }
+})();
+
+var instrumentRunSingleton = (function() {
+  var _instance = null;
+  
+  function createInstance() {
+    var _instrument = allInstrumentsSingleton.getInstance().getCurrentInstrument();
+    var _offset = 0;
+    var _offsetValue = 50;
+    var _overlay = [];
+
+    function calcOverlay() {
+      if (_offsetValue != 50) {
+      }
+      return _overlay;
+    }
+
+    function getOffset() {
+      return _offset;
+    }
+
+    function getOverlay() {
+      return _overlay;
+    }
+
+    function setOffset(x) {
+      if (x >= 0) {
+        _offset = x;
+      }
+      if (_overlay.length - 1 < x) {
+        _overlay.push('#bf0000');
+      }
+    }
+
+    return {
+      calcOverlay: calcOverlay,
+      getOffset: getOffset,
+      getOverlay: getOverlay,
+      setOffset: setOffset
+    }
+  }
+
+  function getInstance() {
+    if(!_instance) {
+      _instance = createInstance();
+    }
+    return _instance;
+  } 
+
+  return {
+    getInstance: getInstance
+  }    
 })();
 
 var allBeatsSingleton = (function() {
@@ -741,6 +794,7 @@ var plotBarSingleton = (function() {
     var _settings = _settingsInstance.getSettings();
     var _allInstruments = allInstrumentsSingleton.getInstance();
     var _scalarColors = colorSingleton.getInstance().getScalarColors();
+    var _instrumentRunInstance = instrumentRunSingleton.getInstance();
 
     function getCanvasWidth() {
       return _canvas.width;
@@ -748,6 +802,7 @@ var plotBarSingleton = (function() {
 
     function plotBar() {
       _context.clearRect(0, 0, _context.canvas.width, _context.canvas.height);
+      const now = new Date().getMilliseconds();
       var width = _context.canvas.width;
       var height = _context.canvas.height;
       var squareSides = _settings.timbreSquareSideLength;
@@ -758,6 +813,8 @@ var plotBarSingleton = (function() {
       var currentInstrument = _allInstruments.getCurrentInstrument().getTimbre();
       var currentLoop = false;
       var currentVert = (_settings.currentOctave * _settings.maxNotes * _settings.maxSubNotes) + (_settings.currentNote * _settings.maxSubNotes);
+      var runOffset = _instrumentRunInstance.getOffset();
+      var offsetColors = _instrumentRunInstance.getOverlay();
 
       if(currentInstrument) {
         _context.lineWidth = halfSquareSides - 2;
@@ -779,9 +836,11 @@ var plotBarSingleton = (function() {
             for(var hor = _settings.horLeft; hor <= _settings.horRight; ++hor) {
               _context.beginPath();
               _context.moveTo(x, y);
-              if(note == _settings.currentNote && subNote == _settings.currentSubNote && hor == (_settings.currentHor) && currentInstrument[_settings.currentOctave][note][subNote][hor] == 50) {
+              if(note == _settings.currentNote && subNote == _settings.currentSubNote && hor == _settings.currentHor && currentInstrument[_settings.currentOctave][note][subNote][hor] == 50 && now / 10 > 50) {
                 _context.strokeStyle = '#bf0000';
-              } else {
+              } else if (note == _settings.currentNote && subNote == _settings.currentSubNote && hor > _settings.currentHor && hor <= _settings.currentHor + runOffset) {
+                _context.strokeStyle = offsetColors[hor - _settings.currentHor]; 
+              }else {
                 // replace 0 with horr
                 _context.strokeStyle = _scalarColors[currentInstrument[_settings.currentOctave][note][subNote][hor]];
               }
@@ -1050,6 +1109,7 @@ var buttonFunctions = (function() {
   var _instruments = allInstrumentsSingleton.getInstance();
   var _timbre = timbreSingleton.getInstance();
   var _settingsInstance = settingsSingleton.getInstance();
+  var _instrumentRunInstance = instrumentRunSingleton.getInstance();
 
   function addBeatButton(value) {
     var container = document.getElementById('beatButtonColumn');
@@ -1192,15 +1252,19 @@ var buttonFunctions = (function() {
 
   function rightTimbre() {
     var horLocation = _settingsInstance.getCurrentHor() + 1;
-    console.log(horLocation);
-    console.log(_settingsInstance.getHorRight());
-    console.log(_settingsInstance.getHorRight() - _settingsInstance.getHorMargin());
-    console.log("----------");
     if (horLocation > (_settingsInstance.getHorRight() - _settingsInstance.getHorMargin()) && horLocation < (_settingsInstance.getTimbreSquares() - _settingsInstance.getHorMargin())) {
       _settingsInstance.setHorRight(_settingsInstance.getHorRight() + 1);
       _settingsInstance.setHorLeft(_settingsInstance.getHorLeft() + 1);
     }
     _settingsInstance.setCurrentHor(_settingsInstance.getCurrentHor() + 1);
+  }
+
+  function secondLeftTimbre() {
+    _instrumentRunInstance.setOffset(_instrumentRunInstance.getOffset() - 1);
+  }
+
+  function secondRightTimbre() {
+    _instrumentRunInstance.setOffset(_instrumentRunInstance.getOffset() + 1);
   }
 
   function sine() {
@@ -1240,6 +1304,8 @@ var buttonFunctions = (function() {
     init: init,
     pulse: pulse,
     rightTimbre: rightTimbre,
+    secondLeftTimbre: secondLeftTimbre,
+    secondRightTimbre: secondRightTimbre,
     sine: sine,
     toggleTimbre: toggleTimbre,
     upTimbre: upTimbre
@@ -1249,35 +1315,34 @@ var buttonFunctions = (function() {
 document.onkeydown = function(e) {
   e = e || window.event;
   if(e.shiftKey) {
-  /**  switch(e.which || e.keyCode) {
-      case 79:
-	buttonFunctions.increaseTone();
-	break;
-      case 78:
-	buttonFunctions.decreaseTone();
-	break;
+    switch(e.which || e.keyCode) {
+      case 72:
+        buttonFunctions.secondLeftTimbre();
+        break;
+      case 76:
+        buttonFunctions.secondRightTimbre();
+        break;
     }
-    **/
   } else {
     switch(e.which || e.keyCode) {
       case 72: // left
-	buttonFunctions.leftTimbre();
-	break;
+        buttonFunctions.leftTimbre();
+        break;
       case 75: //up
-	buttonFunctions.upTimbre(); 
-	break;
+        buttonFunctions.upTimbre(); 
+        break;
       case 76: //right
-	buttonFunctions.rightTimbre();
-	break;
+        buttonFunctions.rightTimbre();
+        break;
       case 74: //down
-	buttonFunctions.downTimbre();
-	break;
+        buttonFunctions.downTimbre();
+        break;
       case 79:
-	buttonFunctions.increaseTone();
-	break;
+        buttonFunctions.increaseTone();
+        break;
       case 78:
-	buttonFunctions.decreaseTone();
-	break;
+        buttonFunctions.decreaseTone();
+        break;
     }
   }
 };

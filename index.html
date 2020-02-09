@@ -22,13 +22,10 @@
     <div class="container">
       <ul class="nav nav-tabs">
         <li class="nav-item">
-          <a class="nav-link active" data-toggle="tab" onclick="buttonFunctions.bar()" href="#instruments-tab">Timbre</a>
+          <a class="nav-link active" data-toggle="tab" onclick="buttonFunctions.bar()" href="#instruments-tab">Notes</a>
         </li>
         <li class="nav-item">
 	  <a class="nav-link" data-toggle="tab" onclick="buttonFunctions.beat()" href="#pieces-tab">Loops</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-toggle="tab" onclick="buttonFunctions.sine()" href="#compositions-tab">Tracks</a>
         </li>
       </ul>
       <div class="tab-content" role="tabpanel" aria-labelledby="beat-tab">
@@ -42,107 +39,31 @@
             </div>
 --->
             <div class="form-row">
-              <div class="col-12 col-md-1 mt-2 mb-2 mb-md-0">
-                <button type="button" onclick="buttonFunctions.toggleTimbre()"  class="btn btn-dark btn-outline-light lower btn-block text-light">Play</button>
-              </div>
-              <div class="col-6 col-md-2 mt-2">
-                <button type="button" onclick="buttonFunctions.leftTimbre()"  class="btn btn-dark btn-outline-light lower btn-block">&larr;&emsp;[ h ]</button>
-              </div>
-              <div class="col-6 col-md-2 mt-2">
-                <button type="button" onclick="buttonFunctions.rightTimbre()"  class="btn btn-dark btn-outline-light higher btn-block">&rarr;&emsp;[ l ]</button>
-              </div>
-              <div class="col-12 mt-2 col-md-3">
-                <div class="input-group d-flex">
-                  <button type="button" onclick="buttonFunctions.decreaseTone()" class="btn btn-dark btn-outline-light minus form-control">-&emsp;[ n ]</button>
-                  <input class="form-control text-light bg-dark border-white tone" type="number" min="0" max="9" value="5" aria-label="periods in beat">
-                  <button type="button" onclick="buttonFunctions.increaseTone()" class="btn btn-dark btn-outline-light plus form-control">+&emsp;[ o ]</button>
-                </div>
-              </div>
-              <div class="col-6 col-md-2 mt-2">
-                <button type="button" onclick="buttonFunctions.downTimbre()" class="btn btn-dark btn-outline-light btn-block up">&darr;&emsp;[ j ]</button>
-              </div>
-              <div class="col-6 col-md-2 mt-2">
-                <button type="button" onclick="buttonFunctions.upTimbre()" class="btn btn-dark btn-outline-light btn-block down">&uarr;&emsp;[ k ]</button>
-              </div>
-            </div>
-<!--
-            <div class="form-row mt-3 mt-md-2">
-              <div class="col-2 col-md-1 mb-2 mb-md-0">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">C</button>
-              </div>
-              <div class="col-2 col-md-1 mb-2 mb-md-0">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">C#</button>
-              </div>
-              <div class="col-2 col-md-1 mb-2 mb-md-0">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">D</button>
-              </div>
-              <div class="col-2 col-md-1 mb-2 mb-md-0">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">D#</button>
-              </div>
-              <div class="col-2 col-md-1 mb-2 mb-md-0">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">E</button>
-              </div>
-              <div class="col-2 col-md-1 mb-2 mb-md-0">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">F</button>
-              </div>
-              <div class="col-2 col-md-1">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">F#</button>
-              </div>
-              <div class="col-2 col-md-1">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">G</button>
-              </div>
-              <div class="col-2 col-md-1">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">G#</button>
-              </div>
-              <div class="col-2 col-md-1">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block 0">A</button>
-              </div>
-              <div class="col-2 col-md-1">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block 0">A#</button>
-              </div>
-              <div class="col-2 col-md-1">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block 0">B</button>
-              </div>
-            </div>
-            <div class="form-row mt-3 mt-md-2">
-              <div class="col-2 col-md-1 mb-2 mb-md-0">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">1</button>
-              </div>
-              <div class="col-2 col-md-1 mb-2 mb-md-0">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">2</button>
-              </div>
-              <div class="col-2 col-md-1 mb-2 mb-md-0">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">3</button>
-              </div>
-              <div class="col-2 col-md-1 mb-2 mb-md-0">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">4</button>
-              </div>
-              <div class="col-2 col-md-1 mb-2 mb-md-0">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">5</button>
-              </div>
-              <div class="col-2 col-md-1 mb-2 mb-md-0">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">6</button>
-              </div>
-              <div class="col-2 col-md-1">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">7</button>
-              </div>
-              <div class="col-2 col-md-1">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">8</button>
-              </div>
-              <div class="col-2 col-md-1">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block">9</button>
-              </div>
-              <div class="col-2 col-md-1">
-                <button type="button" class="btn btn-dark btn-outline-light btn-block 0">10</button>
-              </div>
-              <div class="col-4 col-md-2">
-                <div class="input-group d-flex">
-                  <input class="form-control text-light bg-dark border-white" type="number" min="0" max="9" value="5" aria-label="copy octave">
-                  <button type="button" onclick="buttonFunctions.copy()" class="btn btn-dark btn-outline-light form-control opy">Copy</button>
+              <div class="col-12">
+                <div class="table-responsive-sm">
+                  <table class="table table-sm text-white table-borderless">
+                    <tbody>
+                      <tr>
+                        <td>h / l</td>
+                        <td>Move Cursor Left/Right</td>
+                      </tr>
+                      <tr>
+                        <td>j / k</td>
+                        <td>Move Cursor Down/Up</td>
+                      </tr>
+                      <tr>
+                        <td>n / o</td>
+                        <td>Decrease/Increase Tone amplitude</td>
+                      </tr>
+                      <tr>
+                        <td>H / L (upper)</td>
+                        <td>Move Secondary Cursory Left/Right</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
--->
           </form> 
         </div>
         <div id="pieces-tab" class="tab-pane border-right border-left border-bottom p-3">
@@ -275,21 +196,27 @@
             </div>
           </form>
         </div>
-        <div id="compositions-tab" class="container tab-pane fade border-right border-left border-bottom p-3">
-          <h3>ToDo</h3>
-        </div>
       </div>
       <div class="row mt-5 mt-md-4 ml-0 mr-0">
         <div class="col-12 text-light border border-light scroller">
           <div class="col-12 col-md-8 mx-auto">
-	    <br>
+            <br>
             <h1 class="display-4"><strong>You Can't Play Music</strong></h1>
-	    <p>But you can start right now.</p>
-	    <p> Wear headphones. Use a keyboard if you have one.</p>
-	    <p>The red bar is a single tone. This is what you hear. Press the "o" key or click the "+" button above. The tone gets louder.</p>
-	    <p>Why not use the "+" key? I've arranged the keys in the fastest typing position. You will make music faster than a studio producer. Follow my directions.</p>
-	    <p>Press the "n" key to lower the volume. Or use the button. See the keyboard shortcuts labelled in [ ]. Try each of them now. Move left and right with "h" and "l". Move up and down with "j" and "k". Reach the tone you're looking for without moving your hands.</p> 
-	    </div>
+            <p>But you can start right now.</p>
+            <p>Wear headphones. Use a keyboard.</p>
+            <p>Start by creating the first note of a new instrument.</p>
+            <h3>Volume</h3>
+            <p>Press the "o" key. The tone gets louder (darker blue). The "n" key softens the volume.</p>
+            <p>I've arranged the keys in the fastest typing position. Every stroke matters. Follow my directions.</p>
+            <h3>Time</h3>
+            <p>The "h" and "l" keys move the red cursor horizontally. Time moves across the squares from left to right.</p>
+            <h3>Tone</h3>
+            <p>You're hearing a C# in the 3rd octave. Don't move your hands away from typing position.</p>
+            <p>To change a different tone, use "j" to move down then "k" to move up. There are 12 tones in each octave.</p>
+            <p>C - C# - D - D# - E - F - F# - G - G# - A - A# - B</p>
+            <h3>Octave</h3>
+            <p>You can scroll past the bottom of an octave. Use the "j" key. You are now in the 2nd octave.</p>
+          </div>
         </div>
       </div> 
     </div>
