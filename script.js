@@ -420,6 +420,7 @@ var instrumentRunSingleton = (function() {
   
   function createInstance() {
     var _instrument = allInstrumentsSingleton.getInstance().getCurrentInstrument();
+    var _settings = settingsSingleton.getInstance().getSettings();
     var _offset = 0;
     var _offsetValue = 50;
     var _overlay = [];
@@ -437,12 +438,36 @@ var instrumentRunSingleton = (function() {
     function getOverlay() {
       return _overlay;
     }
+  
+    function getOverlayColor(x) {
+      var index = x - _settings.currentHor;
+      if (index < 0 && Math.abs(index) < Math.abs(_offset)) {
+        // negative offset
+        index = index - _offset;
+      }
+      return _overlay[index];
+    }
+        
+    function getRunEnd() {
+      if (_offset >= 0) {
+        return _settings.currentHor + _offset;
+      } else {
+        return _settings.currentHor;
+      }
+      return ;
+    }
+
+    function getRunStart() {
+      if (_offset >= 0) {
+        return _settings.currentHor;
+      } else {
+        return _settings.currentHor + _offset;
+      }
+    }
 
     function setOffset(x) {
-      if (x >= 0) {
-        _offset = x;
-      }
-      if (_overlay.length - 1 < x) {
+      _offset = x;
+      if (_overlay.length - 1 < Math.abs(x)) {
         _overlay.push('#bf0000');
       }
     }
@@ -451,6 +476,9 @@ var instrumentRunSingleton = (function() {
       calcOverlay: calcOverlay,
       getOffset: getOffset,
       getOverlay: getOverlay,
+      getOverlayColor: getOverlayColor,
+      getRunEnd: getRunEnd,
+      getRunStart: getRunStart,
       setOffset: setOffset
     }
   }
@@ -813,8 +841,6 @@ var plotBarSingleton = (function() {
       var currentInstrument = _allInstruments.getCurrentInstrument().getTimbre();
       var currentLoop = false;
       var currentVert = (_settings.currentOctave * _settings.maxNotes * _settings.maxSubNotes) + (_settings.currentNote * _settings.maxSubNotes);
-      var runOffset = _instrumentRunInstance.getOffset();
-      var offsetColors = _instrumentRunInstance.getOverlay();
 
       if(currentInstrument) {
         _context.lineWidth = halfSquareSides - 2;
@@ -838,8 +864,8 @@ var plotBarSingleton = (function() {
               _context.moveTo(x, y);
               if(note == _settings.currentNote && subNote == _settings.currentSubNote && hor == _settings.currentHor && currentInstrument[_settings.currentOctave][note][subNote][hor] == 50 && now / 10 > 50) {
                 _context.strokeStyle = '#bf0000';
-              } else if (note == _settings.currentNote && subNote == _settings.currentSubNote && hor > _settings.currentHor && hor <= _settings.currentHor + runOffset) {
-                _context.strokeStyle = offsetColors[hor - _settings.currentHor]; 
+              } else if (note == _settings.currentNote && subNote == _settings.currentSubNote && hor >= _instrumentRunInstance.getRunStart() && hor <= _instrumentRunInstance.getRunEnd()) {
+                _context.strokeStyle = _instrumentRunInstance.getOverlayColor(hor); 
               }else {
                 // replace 0 with horr
                 _context.strokeStyle = _scalarColors[currentInstrument[_settings.currentOctave][note][subNote][hor]];
