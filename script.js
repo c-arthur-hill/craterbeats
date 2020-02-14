@@ -155,6 +155,7 @@ var settingsSingleton = (function() {
       horRight: 0,
       timbreSquares: 75,
       horMargin: 1,
+      lastCursorMovement: 0,
     };
 
     function getCurrentHor() {
@@ -179,6 +180,10 @@ var settingsSingleton = (function() {
 
     function getFramesPerSecond() {
       return _settings.fps;
+    }
+
+    function getLastCursorMovement() {
+      return _settings.lastCursorMovement;
     }
 
     function getSettings() {
@@ -213,6 +218,11 @@ var settingsSingleton = (function() {
       if (x < _settings.timbreSquares) {
         _settings.horRight = x;
       }
+    }
+
+    function setLastCursorMovement() {
+      const now = new Date();
+      _settings.lastCursorMovement = now;
     }
 
     function setStepSize(x) {
@@ -251,13 +261,15 @@ var settingsSingleton = (function() {
       getHorRight: getHorRight,
       getHorMargin: getHorMargin,
       getFramesPerSecond: getFramesPerSecond,
+      getLastCursorMovement: getLastCursorMovement,
       getSettings: getSettings,
       getStepSize: getStepSize,
       getTimbreSquares: getTimbreSquares,
       setCurrentHor: setCurrentHor,
       setHorLeft: setHorLeft,
       setHorRight: setHorRight,
-      setFramesPerSecond: setFramesPerSecond,	
+      setFramesPerSecond: setFramesPerSecond,
+      setLastCursorMovement: setLastCursorMovement,	
       setIndex: setIndex,
       setStepSize: setStepSize,
       initHorRight: initHorRight
@@ -268,6 +280,7 @@ var settingsSingleton = (function() {
     if(!_instance) {
       _instance = createInstance();
       _instance.initHorRight();
+      _instance.setLastCursorMovement();
     }
     return _instance;
   }
@@ -830,7 +843,7 @@ var plotBarSingleton = (function() {
 
     function plotBar() {
       _context.clearRect(0, 0, _context.canvas.width, _context.canvas.height);
-      const now = new Date().getMilliseconds();
+      const now = new Date();
       var width = _context.canvas.width;
       var height = _context.canvas.height;
       var squareSides = _settings.timbreSquareSideLength;
@@ -862,7 +875,7 @@ var plotBarSingleton = (function() {
             for(var hor = _settings.horLeft; hor <= _settings.horRight; ++hor) {
               _context.beginPath();
               _context.moveTo(x, y);
-              if(note == _settings.currentNote && subNote == _settings.currentSubNote && hor == _settings.currentHor && currentInstrument[_settings.currentOctave][note][subNote][hor] == 50 && now / 10 > 50) {
+              if(note == _settings.currentNote && subNote == _settings.currentSubNote && hor == _settings.currentHor && currentInstrument[_settings.currentOctave][note][subNote][hor] == 50 && (now.getMilliseconds() / 10 > 50 || now - _settings.lastCursorMovement < 1000)) {
                 _context.strokeStyle = '#bf0000';
               } else if (note == _settings.currentNote && subNote == _settings.currentSubNote && hor >= _instrumentRunInstance.getRunStart() && hor <= _instrumentRunInstance.getRunEnd()) {
                 _context.strokeStyle = _instrumentRunInstance.getOverlayColor(hor); 
@@ -1244,6 +1257,7 @@ var buttonFunctions = (function() {
       newCurrentNote = prev.currentNote + 1;
     }
     _settingsInstance.setIndex(newCurrentInstrument, newCurrentOctave, newCurrentNote);
+    _settingsInstance.setLastCursorMovement();
   }
 
   function increaseTone() {
@@ -1262,6 +1276,7 @@ var buttonFunctions = (function() {
       _settingsInstance.setHorRight(_settingsInstance.getHorRight() - 1);
     }
     _settingsInstance.setCurrentHor(_settingsInstance.getCurrentHor() - 1);
+    _settingsInstance.setLastCursorMovement();
   }
 
   function pulse() {
@@ -1283,14 +1298,17 @@ var buttonFunctions = (function() {
       _settingsInstance.setHorLeft(_settingsInstance.getHorLeft() + 1);
     }
     _settingsInstance.setCurrentHor(_settingsInstance.getCurrentHor() + 1);
+    _settingsInstance.setLastCursorMovement();
   }
 
   function secondLeftTimbre() {
     _instrumentRunInstance.setOffset(_instrumentRunInstance.getOffset() - 1);
+    _settingsInstance.setLastCursorMovement();
   }
 
   function secondRightTimbre() {
     _instrumentRunInstance.setOffset(_instrumentRunInstance.getOffset() + 1);
+    _settingsInstance.setLastCursorMovement();
   }
 
   function sine() {
@@ -1316,6 +1334,7 @@ var buttonFunctions = (function() {
       newCurrentNote = prev.currentNote - 1;
     }
     _settingsInstance.setIndex(newCurrentInstrument, newCurrentOctave, newCurrentNote);
+    _settingsInstance.setLastCursorMovement();
   }
 
   return {
