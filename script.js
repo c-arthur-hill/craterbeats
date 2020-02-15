@@ -466,9 +466,6 @@ var instrumentRunSingleton = (function() {
         // negative offset
         xIndex = xIndex - _offset.x;
       }
-      console.log(_overlay);
-      console.log(xIndex);
-      console.log(yIndex);
       return _overlay[yIndex][xIndex];
     }
     
@@ -510,8 +507,6 @@ var instrumentRunSingleton = (function() {
       if (octave != _settings.currentOctave) {
         return false;
       }
-      console.log(getRunBottom());
-      console.log(getRunTop());
       var vertOff = note + subNote * _settings.maxSubNotes;
       if (vertOff < getRunBottom() || vertOff > getRunTop()) {
         return false;
