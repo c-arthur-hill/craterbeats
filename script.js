@@ -434,9 +434,12 @@ var instrumentRunSingleton = (function() {
   function createInstance() {
     var _instrument = allInstrumentsSingleton.getInstance().getCurrentInstrument();
     var _settings = settingsSingleton.getInstance().getSettings();
-    var _offset = 0;
+    var _offset = {
+      x: 0,
+      y: 0,
+    };
     var _offsetValue = 50;
-    var _overlay = [];
+    var _overlay = [['#bf0000']]; // 2-d array by x-y
 
     function calcOverlay() {
       if (_offsetValue != 50) {
@@ -452,36 +455,80 @@ var instrumentRunSingleton = (function() {
       return _overlay;
     }
   
-    function getOverlayColor(x) {
-      var index = x - _settings.currentHor;
-      if (index < 0 && Math.abs(index) < Math.abs(_offset)) {
+    function getOverlayColor(hor, octave, note, subNote) {
+      var yIndex = note + subNote * _settings.maxSubNotes;
+      yIndex -=  _settings.currentNote + _settings.currentSubNote * _settings.maxSubNotes;
+      var xIndex = hor - _settings.currentHor;
+      if (yIndex < 0) {
+        yIndex = yIndex - _offset.y;
+      }
+      if (xIndex < 0 && Math.abs(xIndex) < Math.abs(_offset.x)) {
         // negative offset
-        index = index - _offset;
+        xIndex = xIndex - _offset.x;
       }
-      return _overlay[index];
+      console.log(_overlay);
+      console.log(xIndex);
+      console.log(yIndex);
+      return _overlay[yIndex][xIndex];
     }
-        
-    function getRunEnd() {
-      if (_offset >= 0) {
-        return _settings.currentHor + _offset;
-      } else {
-        return _settings.currentHor;
+    
+    function getRunBottom() {
+      var currentOff = _settings.currentNote + _settings.currentSubNote * _settings.maxSubNotes;
+      if (_offset.y >= 0) {
+        return currentOff;
       }
-      return ;
+      return currentOff + _offset.y;
+    }
+
+    function getRunEnd() {
+      if (_offset.x >= 0) {
+        return _settings.currentHor + _offset.x;
+      }
+      return _settings.currentHor;
     }
 
     function getRunStart() {
-      if (_offset >= 0) {
+      if (_offset.x >= 0) {
         return _settings.currentHor;
-      } else {
-        return _settings.currentHor + _offset;
       }
+      return _settings.currentHor + _offset.x;
     }
 
-    function setOffset(x) {
-      _offset = x;
-      if (_overlay.length - 1 < Math.abs(x)) {
-        _overlay.push('#bf0000');
+    function getRunTop() {
+      var currentOff = _settings.currentNote + _settings.currentSubNote * _settings.maxSubNotes;
+      if (_offset.y >= 0) {
+        return currentOff + _offset.y;
+      }
+      return currentOff;
+    }
+
+    function inRun(hor, octave, note, subNote) {
+      if (hor < getRunStart() || hor > getRunEnd()) {
+        return false;
+      }
+      // revisit octave
+      if (octave != _settings.currentOctave) {
+        return false;
+      }
+      console.log(getRunBottom());
+      console.log(getRunTop());
+      var vertOff = note + subNote * _settings.maxSubNotes;
+      if (vertOff < getRunBottom() || vertOff > getRunTop()) {
+        return false;
+      } 
+      return true;
+    }
+
+    function setOffset(x, y) {
+      _offset.x = x;
+      _offset.y = y;
+      if (_overlay.length <= Math.abs(y)) {
+        _overlay.push([]);
+      }
+      for (var i = 0; i < _overlay.length; ++i) {
+        if(_overlay[i].length <= Math.abs(x)) {
+          _overlay[i].push('#bf0000');
+        }
       }
     }
 
@@ -490,8 +537,11 @@ var instrumentRunSingleton = (function() {
       getOffset: getOffset,
       getOverlay: getOverlay,
       getOverlayColor: getOverlayColor,
+      getRunBottom: getRunBottom,
       getRunEnd: getRunEnd,
       getRunStart: getRunStart,
+      getRunTop: getRunTop,
+      inRun: inRun,
       setOffset: setOffset
     }
   }
@@ -877,8 +927,8 @@ var plotBarSingleton = (function() {
               _context.moveTo(x, y);
               if(note == _settings.currentNote && subNote == _settings.currentSubNote && hor == _settings.currentHor && currentInstrument[_settings.currentOctave][note][subNote][hor] == 50 && (now.getMilliseconds() / 10 > 50 || now - _settings.lastCursorMovement < 1000)) {
                 _context.strokeStyle = '#bf0000';
-              } else if (note == _settings.currentNote && subNote == _settings.currentSubNote && hor >= _instrumentRunInstance.getRunStart() && hor <= _instrumentRunInstance.getRunEnd()) {
-                _context.strokeStyle = _instrumentRunInstance.getOverlayColor(hor); 
+              } else if (_instrumentRunInstance.inRun(hor, _settings.currentOctave, note, subNote)) {
+                _context.strokeStyle = _instrumentRunInstance.getOverlayColor(hor, _settings.currentOctave, note, subNote); 
               }else {
                 // replace 0 with horr
                 _context.strokeStyle = _scalarColors[currentInstrument[_settings.currentOctave][note][subNote][hor]];
@@ -1301,13 +1351,27 @@ var buttonFunctions = (function() {
     _settingsInstance.setLastCursorMovement();
   }
 
+  function secondDownTimbre() {
+    var currentOffset = _instrumentRunInstance.getOffset();
+    _instrumentRunInstance.setOffset(currentOffset.x, currentOffset.y + 1);
+    _settingsInstance.setLastCursorMovement();
+  }
+
   function secondLeftTimbre() {
-    _instrumentRunInstance.setOffset(_instrumentRunInstance.getOffset() - 1);
+    var currentOffset = _instrumentRunInstance.getOffset();
+    _instrumentRunInstance.setOffset(currentOffset.x - 1, currentOffset.y);
     _settingsInstance.setLastCursorMovement();
   }
 
   function secondRightTimbre() {
-    _instrumentRunInstance.setOffset(_instrumentRunInstance.getOffset() + 1);
+    var currentOffset = _instrumentRunInstance.getOffset();
+    _instrumentRunInstance.setOffset(currentOffset.x + 1, currentOffset.y);
+    _settingsInstance.setLastCursorMovement();
+  }
+
+  function secondUpTimbre() {
+    var currentOffset = _instrumentRunInstance.getOffset();
+    _instrumentRunInstance.setOffset(currentOffset.x, currentOffset.y-1);
     _settingsInstance.setLastCursorMovement();
   }
 
@@ -1349,8 +1413,10 @@ var buttonFunctions = (function() {
     init: init,
     pulse: pulse,
     rightTimbre: rightTimbre,
+    secondDownTimbre: secondDownTimbre,
     secondLeftTimbre: secondLeftTimbre,
     secondRightTimbre: secondRightTimbre,
+    secondUpTimbre: secondUpTimbre,
     sine: sine,
     toggleTimbre: toggleTimbre,
     upTimbre: upTimbre
@@ -1366,6 +1432,12 @@ document.onkeydown = function(e) {
         break;
       case 76:
         buttonFunctions.secondRightTimbre();
+        break;
+      case 75:
+        buttonFunctions.secondUpTimbre();
+        break;  
+      case 74:
+        buttonFunctions.secondDownTimbre();
         break;
     }
   } else {
